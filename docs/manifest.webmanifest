@@ -1,0 +1,22 @@
+{
+  "name": "Fe Cloud · ETS100 云端答案阅读器",
+  "short_name": "Fe Cloud",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "lang": "zh-CN",
+  "description": "面向 ETS100 的云端答案阅读器，移除第三方账户与本地读取模式。",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

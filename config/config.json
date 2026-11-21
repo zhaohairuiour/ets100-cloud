@@ -1,0 +1,14 @@
+{
+ "isForce": false,
+ "isKillSwitchOn": false,
+ "noticeMessage": "Fe Cloud · 仅云端读取",
+ "announcementTitle": "公告",
+ "announcementMessage": "本仓库为 ETS100 云端阅读器的改版实现：已移除第三方账户系统与 Shizuku / Root / 漏洞直读三种本地模式，仅保留官方云端链路。源码由维护者自行持有，请勿公开分发。",
+ "announcementUrl": "",
+ "changelogTitle": "更新日志",
+ "changelogMessage": "",
+ "verificationCode": "",
+ "verificationTitle": "",
+ "verificationMessage": "",
+ "donateEnabled": false
+}

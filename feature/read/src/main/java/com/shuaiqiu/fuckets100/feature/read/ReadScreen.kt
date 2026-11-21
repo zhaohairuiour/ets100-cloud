@@ -1,0 +1,390 @@
+package com.shuaiqiu.fuckets100.feature.read
+
+import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.shuaiqiu.fuckets100.core.designsystem.ExpressiveScaffold
+import com.shuaiqiu.fuckets100.core.designsystem.expressiveTopAppBarColors
+import kotlinx.coroutines.launch
+
+import com.shuaiqiu.fuckets100.ActivationMode
+import com.shuaiqiu.fuckets100.ETS100AnswerReader
+import com.shuaiqiu.fuckets100.ETS100AuthManager
+import com.shuaiqiu.fuckets100.SettingsManager
+private const val TAG = "ReadScreen"
+
+
+/**
+ * 阅读界面 - 仅支持云端模式读取 ETS100 作业答案。
+ * 本地三种读取模式（Shizuku / Root / 漏洞直读）与 FE 账户已移除。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReadScreen(
+    currentMode: ActivationMode,
+    accountOnline: Boolean = true,
+    readAccessChecking: Boolean = false,
+    readAccessIssue: String? = null,
+    onNavigateToActivation: () -> Unit,
+    onOpenPaperDetail: (ETS100AnswerReader.Paper) -> Unit,
+    onOpenChangyanLogin: () -> Unit = {},
+    compactAnswerDisplay: Boolean = SettingsManager.getCompactAnswerDisplay(),
+    viewModel: ReadViewModel = hiltViewModel(),
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
+    val papers = uiState.papers
+    val isLoading = uiState.isLoading
+    val errorMessage = uiState.errorMessage
+    fun copyPaperText(paper: ETS100AnswerReader.Paper) {
+        val text = formatPaperAsText(paper)
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(paper.title, text))
+        Toast.makeText(context, "已复制答案到剪贴板", Toast.LENGTH_SHORT).show()
+    }
+
+    var selectedPaper by remember { mutableStateOf<ETS100AnswerReader.Paper?>(null) }
+    var selectedSectionIndex by remember { mutableIntStateOf(-1) }
+    var selectedQuestionIndex by remember { mutableIntStateOf(-1) }
+
+    // 二级页面导航状态
+    var showPaperDetail by remember { mutableStateOf(false) }
+
+    // 页面级交互状态
+    var sourceExportPaper by remember { mutableStateOf<ETS100AnswerReader.Paper?>(null) }
+    var showCloudDirectoryExport by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
+    // 可展开 FAB 相关状态
+    var showCloudReadConfirmDialog by remember { mutableStateOf(false) }
+    var showReadActionsMenu by remember { mutableStateOf(false) }
+    var errorDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val paperListState = key(currentMode) { rememberLazyListState() }
+    val readFabExpanded by remember(paperListState) {
+        derivedStateOf {
+            paperListState.firstVisibleItemIndex == 0 && paperListState.firstVisibleItemScrollOffset < 100
+        }
+    }
+
+    val selectedCloudCategory = uiState.selectedCloudCategory
+    val selectedCloudHomeworkStatus = uiState.selectedCloudHomeworkStatus
+    val homeworkListsByStatus = uiState.homeworkListsByStatus
+    val isLoadingCloudHomework = uiState.isLoadingCloudHomework
+    val cloudHomeworkError = uiState.cloudHomeworkError
+    val downloadedPaperMap = uiState.downloadedPapers
+    val downloadedHomeworkNames = uiState.downloadedHomeworkNames
+    val cloudDownloadingHomeworks = uiState.cloudDownloadingHomeworks
+    val cloudDownloadProgress = uiState.cloudDownloadProgress
+    val failedCloudHomeworks = uiState.failedCloudHomeworks
+    val isDeleting = uiState.isDeleting
+
+    // 云端作业占位符列表：支持当前、历史及词汇PK三类视图
+    val homeworkList = remember(selectedCloudCategory, homeworkListsByStatus) {
+        ReadDerivedState.homeworkList(selectedCloudCategory, homeworkListsByStatus)
+    }
+    val selectedCloudHomeworkLabel = remember(selectedCloudCategory) {
+        ReadDerivedState.categoryLabel(selectedCloudCategory)
+    }
+    val isCurrentCategoryLoaded = remember(selectedCloudCategory, homeworkListsByStatus) {
+        ReadDerivedState.isCategoryLoaded(selectedCloudCategory, homeworkListsByStatus)
+    }
+    val cloudHomeworkPlaceholders = remember(homeworkList) {
+        homeworkList.map { hw -> createCloudHomeworkPlaceholder(hw) }
+    }
+    val downloadedCloudPapers = remember(downloadedPaperMap) {
+        ReadDerivedState.downloadedCloudPapers(downloadedPaperMap)
+    }
+    val downloadedCloudQuestionCount = remember(downloadedCloudPapers) {
+        downloadedCloudPapers.totalQuestionCount()
+    }
+    val shouldOpenChangyanLoginDirectly = remember(currentMode, cloudHomeworkError) {
+        currentMode == ActivationMode.CLOUD &&
+            cloudHomeworkError != null &&
+            ETS100AuthManager.isChangyanWebLogin(context)
+    }
+
+    val categoryColors = answerCategoryColors()
+
+    // 云端读取副作用（Toast / 打开详情 / 清理选择）由 ViewModel 事件通道驱动。
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is ReadEffect.ShowToast -> Toast.makeText(
+                    context,
+                    effect.message,
+                    if (effect.long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT,
+                ).show()
+
+                is ReadEffect.OpenPaperDetail -> onOpenPaperDetail(effect.paper)
+
+                ReadEffect.ClearPaperSelection -> {
+                    selectedPaper = null
+                    showPaperDetail = false
+                }
+
+                is ReadEffect.ShowError -> errorDialog = effect.title to effect.message
+            }
+        }
+    }
+
+    // 详细错误弹窗：可滚动查看并一键复制，方便反馈给开发者（日志里也有同样内容）。
+    errorDialog?.let { (title, message) ->
+        DetailedErrorDialog(title = title, message = message, onDismiss = { errorDialog = null })
+    }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullToRefreshState()
+
+    val loadCloudHomework: () -> Unit = {
+        scope.launch {
+            isRefreshing = true
+            try {
+                viewModel.loadCloudHomeworkList(accountOnline = accountOnline)
+            } finally {
+                isRefreshing = false
+            }
+        }
+    }
+    val requestCloudRead: () -> Unit = {
+        requestCloudReadWithWarning(
+            skipWarning = SettingsManager.getSkipCloudReadWarning(),
+            onWarningRequired = { showCloudReadConfirmDialog = true },
+            onRead = loadCloudHomework,
+        )
+    }
+
+    val onRefresh: () -> Unit = {
+        if (readAccessChecking || readAccessIssue != null) {
+            onNavigateToActivation()
+        } else if (!accountOnline) {
+            Toast.makeText(context, "已离线", Toast.LENGTH_SHORT).show()
+        } else {
+            requestCloudRead()
+        }
+    }
+
+    ExpressiveScaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal
+        ),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text("读取答案") },
+                actions = {
+                    Box {
+                        IconButton(
+                            onClick = { showReadActionsMenu = true },
+                            enabled = accountOnline,
+                        ) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
+                        }
+                        DropdownMenu(
+                            expanded = showReadActionsMenu,
+                            onDismissRequest = { showReadActionsMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("导出云端缓存文件") },
+                                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                                onClick = {
+                                    showReadActionsMenu = false
+                                    showCloudDirectoryExport = true
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("清除云端缓存") },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                                onClick = {
+                                    showReadActionsMenu = false
+                                    showDeleteConfirmDialog = true
+                                },
+                            )
+                        }
+                    }
+                },
+                windowInsets = WindowInsets.safeDrawing.only(
+                    WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                ),
+                colors = expressiveTopAppBarColors(),
+                scrollBehavior = scrollBehavior,
+            )
+        },
+        floatingActionButton = {
+            SmallExtendedFloatingActionButton(
+                expanded = readFabExpanded,
+                onClick = {
+                    if (readAccessChecking || readAccessIssue != null) {
+                        onNavigateToActivation()
+                        return@SmallExtendedFloatingActionButton
+                    }
+                    if (!accountOnline) {
+                        Toast.makeText(context, "已离线", Toast.LENGTH_SHORT).show()
+                        return@SmallExtendedFloatingActionButton
+                    }
+                    requestCloudRead()
+                },
+                icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
+                text = { Text("读取作业") },
+            )
+        }
+    ) { paddingValues ->
+        PullToRefreshBox(
+            state = pullRefreshState,
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .padding(top = paddingValues.calculateTopPadding())
+                        .align(Alignment.TopCenter),
+                    state = pullRefreshState,
+                    isRefreshing = isRefreshing,
+                )
+            },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+            ) {
+            when {
+                // 1. 读取前置条件不满足时直接显示可操作提示。
+                readAccessChecking || readAccessIssue != null -> {
+                    StaggerEntrance(index = 0, durationMillis = 320) {
+                    ReadAccessGate(
+                    readAccessChecking = readAccessChecking,
+                    readAccessIssue = readAccessIssue,
+                    onNavigateToActivation = onNavigateToActivation,
+                )
+                    }
+                }
+
+                // 2. 云端加载中
+                isLoading || isLoadingCloudHomework -> {
+                    StaggerEntrance(index = 0, durationMillis = 320) {
+                    ReadLoadingState(
+                    downloadedCloudPaperCount = downloadedCloudPapers.size,
+                    downloadedCloudQuestionCount = downloadedCloudQuestionCount,
+                )
+                    }
+                }
+
+                // 3. 错误状态
+                errorMessage != null || cloudHomeworkError != null -> {
+                    StaggerEntrance(index = 0, durationMillis = 320) {
+                    ReadErrorState(
+                    message = errorMessage ?: cloudHomeworkError ?: "未知错误",
+                    actionLabel = if (shouldOpenChangyanLoginDirectly) "前往登录" else "前往激活",
+                    onAction = {
+                        if (shouldOpenChangyanLoginDirectly) {
+                            onOpenChangyanLogin()
+                        } else {
+                            onNavigateToActivation()
+                        }
+                    },
+                )
+                    }
+                }
+
+                // 4. 云端模式：作业列表或答案详情
+                else -> {
+                    if (homeworkList.isNotEmpty() || papers.isNotEmpty()) {
+                        ReadCloudContent(
+                            showPaperDetail = showPaperDetail,
+                            selectedPaper = selectedPaper,
+                            onCloseDetail = {
+                                showPaperDetail = false
+                                selectedPaper = null
+                            },
+                            onOpenDetail = onOpenPaperDetail,
+                            onCopyText = ::copyPaperText,
+                            onExportSource = { sourceExportPaper = it },
+                            onCategorySelect = viewModel::selectCloudCategory,
+                            onDownloadHomework = { info, parseStatus ->
+                                viewModel.requestHomeworkDownload(
+                                    homeworkInfo = info,
+                                    status = parseStatus,
+                                    accountOnline = accountOnline,
+                                )
+                            },
+                            categoryColors = categoryColors,
+                            compactAnswerDisplay = compactAnswerDisplay,
+                            paperListState = paperListState,
+                            selectedCloudHomeworkStatus = selectedCloudHomeworkStatus,
+                            selectedCloudCategory = selectedCloudCategory,
+                            homeworkList = homeworkList,
+                            isCurrentCategoryLoaded = isCurrentCategoryLoaded,
+                            selectedCloudHomeworkLabel = selectedCloudHomeworkLabel,
+                            downloadedHomeworkNames = downloadedHomeworkNames,
+                            downloadedPaperMap = downloadedPaperMap,
+                            cloudDownloadingHomeworks = cloudDownloadingHomeworks,
+                            failedCloudHomeworks = failedCloudHomeworks,
+                            cloudDownloadProgress = cloudDownloadProgress,
+                            accountOnline = accountOnline,
+                        )
+                    } else {
+                        ReadEmptyContent()
+                    }
+                }
+            }
+
+            // 删除确认对话框（仅云端：清除缓存）
+            if (showDeleteConfirmDialog) {
+                DeleteConfirmDialog(
+                    onDismiss = { showDeleteConfirmDialog = false },
+                    onConfirm = {
+                        showDeleteConfirmDialog = false
+                        viewModel.clearCloudHomeworkCache()
+                    },
+                    isCloudMode = true
+                )
+            }
+
+            if (showCloudReadConfirmDialog) {
+                CloudReadConfirmDialog(
+                    onDismiss = { showCloudReadConfirmDialog = false },
+                    onConfirm = {
+                        showCloudReadConfirmDialog = false
+                        loadCloudHomework()
+                    }
+                )
+            }
+
+            if (isDeleting) {
+                DeletingOverlay()
+            }
+        }
+    }
+}
+    ReadDialogHosts(
+        downloadedPaperMap = downloadedPaperMap,
+        cloudDownloadingHomeworks = cloudDownloadingHomeworks,
+        sourceExportPaper = sourceExportPaper,
+        onClearSourceExport = { sourceExportPaper = null },
+        showCloudDirectoryExport = showCloudDirectoryExport,
+        onDismissCloudDirectoryExport = { showCloudDirectoryExport = false },
+    )
+}

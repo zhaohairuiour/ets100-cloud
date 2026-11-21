@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Fe Cloud · ETS100 云端答案阅读器</title>
+<meta name="description" content="Fe Cloud 是面向 ETS100（e听说）的云端答案阅读器：移除第三方账户与本地读取模式，仅保留云端 API 链路，Compose 动画全链路优化。" />
+<meta name="theme-color" content="#0b0f14" />
+<link rel="icon" href="assets/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="stylesheet" href="assets/style.css" />
+<link rel="manifest" href="manifest.webmanifest" />
+<script>
+  /* 首屏前定主题，避免闪烁 */
+  (function () {
+    try {
+      var t = localStorage.getItem("fe-cloud-theme");
+      if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<meta property="og:title" content="Fe Cloud · ETS100 云端答案阅读器" />
+<meta property="og:description" content="仅保留云端读取的 Compose 客户端，含完整动画与模块架构说明。" />
+</head>
+<body>
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">Fe Cloud</span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#features">特性</a>
+      <a href="#diff">改造对比</a>
+      <a href="#arch">架构</a>
+      <a href="#motion">动画</a>
+      <a href="#build">构建</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" aria-label="切换主题" title="切换主题">
+        <svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path class="ic-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+          <g class="ic-sun">
+            <circle cx="12" cy="12" r="4.2" />
+            <path d="M12 2.6v2.4M12 19v2.4M2.6 12h2.4M19 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7" />
+          </g>
+        </svg>
+      </button>
+      <a class="btn btn-ghost" href="#build">获取安装包</a>
+      <button class="icon-btn nav-burger" id="navBurger" aria-label="打开菜单" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" id="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="pill" id="versionPill">
+          <span class="pill-dot"></span>
+          <span id="versionText">v2.3.0.1-fix</span>
+          <span class="pill-sep"></span>
+          <span class="pill-muted">versionCode <span id="versionCode">25</span></span>
+        </div>
+        <h1 class="hero-title">
+          只读云端，<br />
+          <span class="grad">不做多余的事</span>
+        </h1>
+        <p class="hero-sub" id="typer" aria-live="polite"></p>
+        <p class="hero-desc">
+          面向 ETS100（e听说）的答案阅读客户端。已移除第三方账户系统与 Shizuku / Root / 漏洞直读三种本地模式，
+          仅保留官方云端 API 与账号登录链路；引导、列表、页面过渡全部改用 draw-phase 动画。
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#build">下载 APK</a>
+          <a class="btn btn-ghost" href="#diff">看改造了什么</a>
+        </div>
+        <div class="hero-stats" id="heroStats">
+          <div class="stat">
+            <span class="stat-num" data-count="2">0</span>
+            <span class="stat-label">个模块整体移除</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-count="3">0</span>
+            <span class="stat-label">种本地读取下线</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-count="7">0</span>
+            <span class="stat-label">处动画重写</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-count="0">0</span>
+            <span class="stat-label">编译错误</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-device" id="tiltCard">
+        <div class="device">
+          <div class="device-notch"></div>
+          <div class="device-screen">
+            <div class="screen-statusbar">
+              <span>5:40</span>
+              <span class="sb-right"><i class="sb-dot"></i> 4G <span class="sb-batt">51</span></span>
+            </div>
+            <div class="screen-body">
+              <div class="screen-card screen-hero">
+                <div class="sc-icon"></div>
+                <div class="sc-title">云端作业</div>
+                <div class="sc-line"></div>
+                <div class="sc-line short"></div>
+              </div>
+              <div class="screen-card screen-stagger" id="staggerDemo">
+                <div class="st-item"></div>
+                <div class="st-item"></div>
+                <div class="st-item"></div>
+                <div class="st-item"></div>
+              </div>
+            </div>
+            <div class="screen-fab">读取</div>
+          </div>
+        </div>
+        <div class="device-shadow" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="section-head">
+      <span class="eyebrow">特性</span>
+      <h2>六个改动点，一条链路</h2>
+      <p>从模块裁剪到动画实现，全部落在可验证的代码位置上。</p>
+    </div>
+    <div class="cards" id="featureCards">
+      <article class="card" data-spot>
+        <div class="card-icon">01</div>
+        <h3>账户系统剥离</h3>
+        <p><code>data:account</code> 与 <code>feature:account</code> 两个 Gradle 模块整体删除，账户登录、绑定、头像、验证码入口全部消失。</p>
+        <ul class="card-list">
+          <li>settings.gradle.kts 移除 include</li>
+          <li>6 个模块清理 project 依赖</li>
+        </ul>
+      </article>
+      <article class="card" data-spot>
+        <div class="card-icon">02</div>
+        <h3>三种本地读取下线</h3>
+        <p>Shizuku / Root / 漏洞直读从激活页、引导页、首页状态与阅读页同时移除，不再申请全文件访问权限。</p>
+        <ul class="card-list">
+          <li>Shizuku / Sui 运行时初始化移除</li>
+          <li>shizuku-api 依赖删除</li>
+        </ul>
+      </article>
+      <article class="card" data-spot>
+        <div class="card-icon">03</div>
+        <h3>云端链路保留</h3>
+        <p><code>ETS100AuthManager</code>、<code>ETS100ApiClient</code>、作业下载与模板合并、<code>PaperSource(Cloud)</code> 全部保留。</p>
+        <ul class="card-list">
+          <li>手机号 + 密码登录</li>
+          <li>设备绑定短信验证</li>
+        </ul>
+      </article>
+      <article class="card" data-spot>
+        <div class="card-icon">04</div>
+        <h3>draw-phase 动画</h3>
+        <p>用 <code>Animatable</code> + <code>graphicsLayer</code> 在绘制阶段直读属性，动画期间不触发重组。</p>
+        <ul class="card-list">
+          <li>摒弃 animateFloatAsState 逐帧重组</li>
+          <li>弹簧/补间混用做节奏</li>
+        </ul>
+      </article>
+      <article class="card" data-spot>
+        <div class="card-icon">05</div>
+        <h3>阶梯入场</h3>
+        <p><code>StaggerEntrance</code> 按 index 延迟入场，45ms 步进，上限 8 项；LazyColumn 只组合可见项，天然首屏生效。</p>
+        <ul class="card-list">
+          <li>四态容器统一接入</li>
+          <li>深列表不累积等待</li>
+        </ul>
+      </article>
+      <article class="card" data-spot>
+        <div class="card-icon">06</div>
+        <h3>过渡不裁剪</h3>
+        <p>步骤切换增加 <code>SizeTransform(clip = false)</code>，消除高度插值导致的裁切与跳变。</p>
+        <ul class="card-list">
+          <li>显式 tween 时长</li>
+          <li>onboarding → 主界面 alpha 淡入</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="diff">
+    <div class="section-head">
+      <span class="eyebrow">改造对比</span>
+      <h2>保留了什么，删掉了什么</h2>
+      <p>切换分类查看具体条目。</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="改造对比">
+      <button class="tab is-active" role="tab" aria-selected="true" data-tab="removed">已移除</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="kept">已保留</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="anim">动画改动</button>
+    </div>
+    <div class="tab-panels">
+      <div class="tab-panel is-active" data-panel="removed" role="tabpanel">
+        <div class="list-row"><span class="tag tag-red">模块</span><div><b>data:account / feature:account</b><p>账户登录、个人中心、绑定、LastStudio 云端授权、头像、验证码</p></div></div>
+        <div class="list-row"><span class="tag tag-red">模式</span><div><b>Shizuku</b><p>激活面板、引导卡片、首页状态、ShizukuRuntimeState 初始化</p></div></div>
+        <div class="list-row"><span class="tag tag-red">模式</span><div><b>Root</b><p>RootManager / ZWCHelper 调用链与权限申请</p></div></div>
+        <div class="list-row"><span class="tag tag-red">模式</span><div><b>漏洞直读</b><p>DirectRead 面板、本地加载器、本地解析状态、本地目录导出</p></div></div>
+        <div class="list-row"><span class="tag tag-red">UI</span><div><b>本地读取相关组件</b><p>ReadLocalLoader / ReadLocalParsingState / LocalAnswerParsingCard / VerificationDialog</p></div></div>
+      </div>
+      <div class="tab-panel" data-panel="kept" role="tabpanel">
+        <div class="list-row"><span class="tag tag-green">账号</span><div><b>ETS100AuthManager</b><p>手机号 + 密码登录、token 持久化、设备绑定短信验证</p></div></div>
+        <div class="list-row"><span class="tag tag-green">账号</span><div><b>ChangyanWebLoginActivity</b><p>畅言网页登录，作为账号获取的备用入口</p></div></div>
+        <div class="list-row"><span class="tag tag-green">云端</span><div><b>ETS100ApiClient</b><p>作业列表、下载、模板合并、答案解析</p></div></div>
+        <div class="list-row"><span class="tag tag-green">云端</span><div><b>PaperSource(Cloud) / CloudMerge</b><p>云端试卷数据模型与合并模板</p></div></div>
+        <div class="list-row"><span class="tag tag-green">Native</span><div><b>libresolver.so / libcloud.so</b><p>arm64-v8a 原生解析组件</p></div></div>
+      </div>
+      <div class="tab-panel" data-panel="anim" role="tabpanel">
+        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>WelcomeStep</b><p>logo spring 缩放 + alpha，标题 160ms、特性 340ms、CTA 560ms 阶梯入场</p></div></div>
+        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>ModeStep / FinishStep</b><p>三段 stagger 上滑淡入，图标弹性缩放</p></div></div>
+        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>StepIndicator</b><p>连续进度条 scaleX 插值 + 文案淡入切换</p></div></div>
+        <div class="list-row"><span class="tag tag-blue">切换</span><div><b>OnboardingScreen</b><p>slide + fade，SizeTransform(clip = false) 防裁剪</p></div></div>
+        <div class="list-row"><span class="tag tag-blue">阅读</span><div><b>ReadScreen / ReadCloudContent</b><p>四态入场 + 列表项 StaggerEntrance（45ms 步进）</p></div></div>
+        <div class="list-row"><span class="tag tag-blue">设置</span><div><b>SettingsScreen</b><p>内容块淡入 + 28dp 上滑</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="arch">
+    <div class="section-head">
+      <span class="eyebrow">架构</span>
+      <h2>模块依赖</h2>
+      <p>点击任一节点查看职责与关键类型。</p>
+    </div>
+    <div class="arch-wrap">
+      <div class="arch-graph" id="archGraph">
+        <button class="node node-app" data-node="app">app</button>
+        <div class="arch-row">
+          <button class="node" data-node="core">core/*</button>
+          <button class="node" data-node="data">data/*</button>
+          <button class="node" data-node="feature">feature/*</button>
+        </div>
+        <div class="arch-row arch-row-sub">
+          <button class="node node-sub" data-node="ets100">data:ets100</button>
+          <button class="node node-sub" data-node="read">feature:read</button>
+          <button class="node node-sub" data-node="onboarding">feature:onboarding</button>
+          <button class="node node-sub" data-node="activation">feature:activation</button>
+        </div>
+        <div class="arch-row arch-row-sub">
+          <button class="node node-removed" disabled>data:account（已移除）</button>
+          <button class="node node-removed" disabled>feature:account（已移除）</button>
+        </div>
+      </div>
+      <aside class="arch-detail" id="archDetail" aria-live="polite">
+        <h3>选择左侧节点</h3>
+        <p>每个模块的职责、关键类与被裁剪部分都会显示在这里。</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="motion">
+    <div class="section-head">
+      <span class="eyebrow">动画</span>
+      <h2>入场节奏可视化</h2>
+      <p>重播可观察每一段的延迟与时长。</p>
+    </div>
+    <div class="motion-demo">
+      <div class="motion-stage" id="motionStage">
+        <div class="m-node m-logo">logo</div>
+        <div class="m-node m-title">标题</div>
+        <div class="m-node m-row">特性 1</div>
+        <div class="m-node m-row">特性 2</div>
+        <div class="m-node m-row">特性 3</div>
+        <div class="m-node m-cta">CTA</div>
+      </div>
+      <div class="motion-side">
+        <div class="motion-controls">
+          <button class="btn btn-primary" id="motionReplay">重播</button>
+          <div class="speed" id="speedGroup" role="group" aria-label="速度">
+            <button class="speed-btn is-active" data-speed="1">1×</button>
+            <button class="speed-btn" data-speed="2">2×</button>
+            <button class="speed-btn" data-speed="4">4×</button>
+          </div>
+        </div>
+        <table class="timeline">
+          <thead><tr><th>元素</th><th>延迟</th><th>时长</th></tr></thead>
+          <tbody>
+            <tr><td>logo</td><td>0ms</td><td>spring</td></tr>
+            <tr><td>标题</td><td>160ms</td><td>420ms</td></tr>
+            <tr><td>特性列表</td><td>340ms</td><td>480ms</td></tr>
+            <tr><td>CTA</td><td>560ms</td><td>420ms</td></tr>
+          </tbody>
+        </table>
+        <pre class="code"><code>val logoScale = remember { Animatable(0.5f) }
+LaunchedEffect(Unit) {
+    launch { logoScale.animateTo(1f, spring(...)) }
+}
+Modifier.graphicsLayer { scaleX = logoScale.value }</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="build">
+    <div class="section-head">
+      <span class="eyebrow">构建与下载</span>
+      <h2>本地构建 / 安装</h2>
+      <p>命令可一键复制。</p>
+    </div>
+    <div class="build-grid">
+      <div class="build-card">
+        <h3>环境</h3>
+        <ul class="kv">
+          <li><span>JDK</span><b>17</b></li>
+          <li><span>Gradle</span><b>9.6.1 wrapper</b></li>
+          <li><span>AGP / Kotlin</span><b>9.3.1 / 2.4.10</b></li>
+          <li><span>compileSdk</span><b>37</b></li>
+        </ul>
+      </div>
+      <div class="build-card">
+        <h3>编译</h3>
+        <div class="copybox">
+          <pre><code id="cmdBuild">export JAVA_HOME=/path/to/jdk-17
+export ANDROID_HOME=/path/to/android-sdk
+./gradlew :app:assembleDebug</code></pre>
+          <button class="copy-btn" data-copy="#cmdBuild">复制</button>
+        </div>
+        <p class="hint">产物：<code>app/build/outputs/apk/debug/app-debug.apk</code></p>
+      </div>
+      <div class="build-card">
+        <h3>安装</h3>
+        <div class="copybox">
+          <pre><code id="cmdInstall">adb install -r app-debug.apk</code></pre>
+          <button class="copy-btn" data-copy="#cmdInstall">复制</button>
+        </div>
+        <p class="hint">Debug 签名 SHA-256 <code>79186029…d9c5</code>，与历史包一致可覆盖安装。</p>
+      </div>
+      <div class="build-card">
+        <h3>版本清单</h3>
+        <p class="hint">站点会请求仓库根 <code>version.json</code> 校验版本。</p>
+        <button class="btn btn-ghost" id="checkVersion">检查版本</button>
+        <div class="json-out" id="versionOut" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="faq">
+    <div class="section-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>常见问题</h2>
+    </div>
+    <div class="faq" id="faqList">
+      <details>
+        <summary>为什么登录页变成了手机号 + 密码？</summary>
+        <p>云端模式使用 <code>ETS100AuthManager</code> 直接调用 ETS100 登录接口（手机号 + 密码 + deviceCode），首次设备需短信验证。畅言网页登录仅作为备用入口。</p>
+      </details>
+      <details>
+        <summary>为什么不再需要 Shizuku 或 Root？</summary>
+        <p>三种本地读取模式已整体移除，读取路径只走官方云端 API，因此不再申请全文件访问权限，也不再初始化 Shizuku/Sui 运行时。</p>
+      </details>
+      <details>
+        <summary>覆盖安装会丢数据吗？</summary>
+        <p>签名证书一致，覆盖安装保留 <code>SharedPreferences</code>。若想重新体验引导动画，需清除应用数据，而非卸载重装。</p>
+      </details>
+      <details>
+        <summary>动画为什么改成 Animatable？</summary>
+        <p><code>animateFloatAsState</code> 在 <code>graphicsLayer</code> 里读普通 Float 会导致每帧重组整棵树；改用 <code>Animatable.value</code> 在 draw phase 直读，动画期间零重组。</p>
+      </details>
+      <details>
+        <summary>这个仓库可以公开分发吗？</summary>
+        <p>原始项目声明源码闭源并禁止重新打包分发。本仓库仅作本地改造与个人备份，公开分发需先取得原始作者授权。</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="brand-text">Fe Cloud</div>
+      <p class="muted">Kotlin · Jetpack Compose · 云端读取改造版</p>
+    </div>
+    <div class="footer-links">
+      <a href="#features">特性</a>
+      <a href="#arch">架构</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="assets/main.js"></script>
+</body>
+</html>
