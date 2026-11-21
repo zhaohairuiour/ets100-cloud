@@ -58,7 +58,7 @@ export ANDROID_HOME=/path/to/android-sdk
 
 ## 介绍站（GitHub Pages）
 
-站点源码位于 `docs/`，纯静态、无构建步骤，由 `.github/workflows/pages.yml` 在每次 `main` 分支 `docs/**` 变更时自动发布。
+站点源码位于 `docs/`，纯静态、无构建步骤，由 Pages 的 **Deploy from a branch** 直接发布 `main` 分支的 `/docs` 目录，不依赖 Actions workflow。
 
 ```bash
 # 本地预览
@@ -66,11 +66,11 @@ python3 -m http.server 8899 --directory docs
 # 打开 http://127.0.0.1:8899/
 ```
 
-仓库名为 `ets100-cloud` 时，Pages 地址为 `https://zhaohairuiour.github.io/ets100-cloud/`。首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 **GitHub Actions**。
+仓库名为 `ets100-cloud` 时，Pages 地址为 `https://zhaohairuiour.github.io/ets100-cloud/`。首次部署在仓库 `Settings → Pages → Build and deployment → Source` 选择 **Deploy from a branch**，分支 `main`、目录 `/docs`。
 
 设计语言是**印刷出版物 / 技术白皮书**，而非落地页模板：纸感底（浅色 `#f3efe6`、深色 `#13100d`）、衬线大标题、编号章节、hairline 分隔线、边注，无渐变发光与卡片网格。
 
-页面八节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）。
+页面为封面加九节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）→ 来源与致谢（解析器内核参考 LastStudio Fuck-ETS）。
 
 左侧常驻目录随滚动高亮，底部显示阅读百分比；窄屏（≤860px）收起侧栏，改为吸顶栏 + 主题切换。文件：`index.html`、`assets/style.css`、`assets/main.js`、`404.html`、`manifest.webmanifest`、`version.json` 与 192/512 图标。
 
