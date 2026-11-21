@@ -42,6 +42,7 @@
     <a class="toc-item" href="#build"><span class="no">06</span><span>构建与安装</span></a>
     <a class="toc-item" href="#release"><span class="no">07</span><span>版本与清单</span></a>
     <a class="toc-item" href="#qa"><span class="no">08</span><span>问答</span></a>
+    <a class="toc-item" href="#colophon"><span class="no">09</span><span>来源与致谢</span></a>
   </nav>
 
   <div class="rail-spacer"></div>
@@ -93,8 +94,8 @@
           <p class="aside-text">本地签名与历次一致<br />覆盖安装，无需卸载</p>
         </div>
         <div class="aside-block">
-          <p class="aside-label">许可</p>
-          <p class="aside-text">原项目声明闭源禁再分发<br />仅供个人学习与备份</p>
+          <p class="aside-label">来源</p>
+          <p class="aside-text">解析器内核参考 LastStudio<br />Fuck-ETS（原项目闭源）</p>
         </div>
       </aside>
 
@@ -606,10 +607,53 @@
       </div>
     </section>
 
+    <!-- ============ 09 来源 ============ -->
+    <section class="section" id="colophon">
+      <div class="section-head">
+        <div class="section-no">09</div>
+        <div>
+          <h2 class="section-title">来源与致谢</h2>
+          <p class="section-note">这一节说明哪些实现来自他人、哪些属于本次改动，避免署名含糊。</p>
+        </div>
+      </div>
+
+      <div class="build-grid">
+        <div>
+          <p class="lede">
+            云端解析链路的内核实现参考了 <b>LastStudio 的 Fuck-ETS</b>：
+            native 层的 <code>libresolver.so</code> 与 <code>libcloud.so</code>、
+            试卷模板合并与答案解析的调用约定，都源自该项目。
+            本次改动只是在它的基础上做模块删减与动画重写，不替代其内核。
+          </p>
+          <p class="lede">
+            账号与云端接口走 <b>ETS100 官方 API</b>；本项目不托管任何服务端，
+            也不分发原项目的会员、验证码或私域入口。
+          </p>
+          <p class="lede">
+            原始项目声明<strong>源码闭源并禁止重新打包分发</strong>。
+            本仓库是其个人改版，仅供学习与备份；如需二次分发，请自行取得原作者授权。
+          </p>
+        </div>
+        <div>
+          <div class="cmd">
+            <div class="cmd-head"><span>Credits</span></div>
+            <div class="cmd-body">parser kernel   LastStudio · Fuck-ETS
+cloud api       ETS100 (e听说) 官方
+ui / animation  本次改版
+build tool      AGP 9.3.1 · Kotlin 2.4.10
+license         原项目闭源 · 仅个人使用</div>
+          </div>
+          <p class="side-note" style="margin-top:18px;">
+            页面不转载原文公告、群号或验证码；来源信息以技术依赖的方式标注。
+          </p>
+        </div>
+      </div>
+    </section>
+
     <footer class="foot">
       <div>
         <p class="foot-title">Fe Cloud · 改版档案</p>
-        <p class="foot-meta">Kotlin / Jetpack Compose · 仅云端读取 · 2026</p>
+        <p class="foot-meta">Kotlin / Jetpack Compose · 仅云端读取 · 解析器内核参考 LastStudio Fuck-ETS · 2026</p>
       </div>
       <div class="foot-links">
         <a href="#cover">回到封面</a>

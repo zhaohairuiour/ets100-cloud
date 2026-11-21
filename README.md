@@ -78,6 +78,10 @@ python3 -m http.server 8899 --directory docs
 
 根目录 `version.json` 供 App 与站点共同消费；`docs/version.json` 是站点侧同源副本，两者需保持一致（`apkUrl` 在发布 Release 后填入）。
 
+## 来源
+
+云端解析链路的内核实现参考了 **LastStudio 的 Fuck-ETS**：native 层的 `libresolver.so` / `libcloud.so`、试卷模板合并与答案解析的调用约定均源自该项目，本次改动只做模块删减与动画重写。账号与云端接口走 ETS100 官方 API，本仓库不托管任何服务端。
+
 ## 许可与来源
 
 本项目为他人项目的本地改造版本，原始项目声明源码闭源并禁止重新打包分发。**请勿将此仓库源码或构建产物公开分发**，仅作个人学习与备份使用；如需二次分发，需自行取得原始作者授权。
