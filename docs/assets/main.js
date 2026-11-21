@@ -598,18 +598,38 @@
   /* ---------------- 入场 ---------------- */
 
   function initReveal() {
-    const targets = $$(".section-head, .figures, .entry, .cut-col, .tree, .tree-read, .ver-table, .qa-item");
-    if (!targets.length) return;
+    const SELECTORS = [
+      ".cover .kicker", ".cover-title", ".cover-lead", ".cover-aside", ".meta-table",
+      ".section-head", ".lede", ".figure", ".entry", ".cut-col",
+      ".tree", ".tree-read",
+      ".transport", ".track-head", ".track-row", ".time-ruler", ".scrub", ".side-note",
+      ".cmd", ".step-list li", ".ver-table", ".probe",
+      ".qa-item", ".foot",
+    ];
+
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => {
-        if (e.isIntersecting) {
-          e.target.classList.add("is-in");
-          io.unobserve(e.target);
-        }
+        if (!e.isIntersecting) return;
+        e.target.classList.add("is-in");
+        io.unobserve(e.target);
       }),
-      { threshold: 0.08 }
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
-    targets.forEach((tg) => { tg.classList.add("reveal"); io.observe(tg); });
+
+    const groupCount = new WeakMap();
+    SELECTORS.forEach((sel) => {
+      $$(sel).forEach((el) => {
+        if (el.classList.contains("reveal")) return;
+        el.classList.add("reveal");
+
+        const parent = el.parentElement || document.body;
+        const idx = groupCount.get(parent) || 0;
+        groupCount.set(parent, idx + 1);
+        el.style.setProperty("--reveal-delay", Math.min(idx, 7) * 50 + "ms");
+
+        io.observe(el);
+      });
+    });
   }
 
   /* ---------------- 启动 ---------------- */

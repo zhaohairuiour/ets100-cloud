@@ -71,7 +71,7 @@ python3 -m http.server 8899 --directory docs
 
 仓库名为 `ets100-cloud` 时，Pages 地址为 `https://zhaohairuiour.github.io/ets100-cloud/`。首次部署在仓库 `Settings → Pages → Build and deployment → Source` 选择 **Deploy from a branch**，分支 `main`、目录 `/docs`。
 
-设计语言是**深色科技风**：网格底纹加青 / 紫双色光晕，圆角玻璃卡片，阶梯胶囊按钮与编号章节，数据行统一等宽字体；默认深色主题，可切换到冷白浅色（同一套圆角与光效语言）。主题偏好键为 `fe-cloud-theme-v2`。
+设计语言是**深色科技风**：网格底纹加青 / 紫双色光晕，圆角玻璃卡片，阶梯胶囊按钮与编号章节，数据行统一等宽字体；默认深色主题，可切换到冷白浅色（同一套圆角与光效语言）。主题偏好键为 `fe-cloud-theme-v2`。滚动时各段元素逐个淡入上移（IntersectionObserver，同组 50ms 步进、上限 8 项），首屏封面元素在加载后依次入场。
 
 页面为封面加九节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）→ 来源与致谢（解析器内核参考 LastStudio Fuck-ETS）。
 
