@@ -1,12 +1,12 @@
 {
-  "name": "Fe Cloud · ETS100 云端答案阅读器",
+  "name": "Fe Cloud · ETS100 云端阅读器改版档案",
   "short_name": "Fe Cloud",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0b0f14",
-  "theme_color": "#0b0f14",
+  "background_color": "#f3efe6",
+  "theme_color": "#f3efe6",
   "lang": "zh-CN",
-  "description": "面向 ETS100 的云端答案阅读器，移除第三方账户与本地读取模式。",
+  "description": "ETS100 云端阅读器改版档案：移除账户系统与本地读取模式，动画改为 draw-phase。",
   "icons": [
     {
       "src": "assets/icon-192.png",

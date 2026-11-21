@@ -1,400 +1,628 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Fe Cloud · ETS100 云端答案阅读器</title>
-<meta name="description" content="Fe Cloud 是面向 ETS100（e听说）的云端答案阅读器：移除第三方账户与本地读取模式，仅保留云端 API 链路，Compose 动画全链路优化。" />
-<meta name="theme-color" content="#0b0f14" />
+<title>Fe Cloud — ETS100 云端阅读器改版档案</title>
+<meta name="description" content="ETS100（e听说）答案阅读器的改版档案：移除第三方账户系统与 Shizuku / Root / 漏洞直读三种本地模式，仅保留云端链路，Compose 动画全链路改为 draw-phase 实现。" />
+<meta name="theme-color" content="#f3efe6" />
 <link rel="icon" href="assets/icon-192.png" type="image/png" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
-<link rel="stylesheet" href="assets/style.css" />
 <link rel="manifest" href="manifest.webmanifest" />
+<link rel="stylesheet" href="assets/style.css" />
+<meta property="og:title" content="Fe Cloud — ETS100 云端阅读器改版档案" />
+<meta property="og:description" content="只读云端。移除账户系统与三种本地读取模式，动画改为 draw-phase 直读。" />
+<meta property="og:type" content="article" />
 <script>
   /* 首屏前定主题，避免闪烁 */
   (function () {
     try {
       var t = localStorage.getItem("fe-cloud-theme");
-      if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      if (!t) t = "light";
       document.documentElement.setAttribute("data-theme", t);
     } catch (e) {}
   })();
 </script>
-<meta property="og:title" content="Fe Cloud · ETS100 云端答案阅读器" />
-<meta property="og:description" content="仅保留云端读取的 Compose 客户端，含完整动画与模块架构说明。" />
 </head>
 <body>
-<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
-<header class="nav" id="nav">
-  <div class="nav-inner">
-    <a class="brand" href="#top">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text">Fe Cloud</span>
-    </a>
-    <nav class="nav-links" aria-label="主导航">
-      <a href="#features">特性</a>
-      <a href="#diff">改造对比</a>
-      <a href="#arch">架构</a>
-      <a href="#motion">动画</a>
-      <a href="#build">构建</a>
-      <a href="#faq">FAQ</a>
-    </nav>
-    <div class="nav-actions">
-      <button class="icon-btn" id="themeToggle" aria-label="切换主题" title="切换主题">
-        <svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path class="ic-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
-          <g class="ic-sun">
-            <circle cx="12" cy="12" r="4.2" />
-            <path d="M12 2.6v2.4M12 19v2.4M2.6 12h2.4M19 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7" />
-          </g>
-        </svg>
-      </button>
-      <a class="btn btn-ghost" href="#build">获取安装包</a>
-      <button class="icon-btn nav-burger" id="navBurger" aria-label="打开菜单" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
+<aside class="rail" aria-label="目录">
+  <div class="rail-brand">
+    <span class="brand-lockup"><span class="brand-mark"></span>Fe Cloud</span>
+    <p class="brand-sub">改版档案 · Vol. 01</p>
   </div>
+
+  <nav class="rail-toc" aria-label="章节">
+    <a class="toc-item" href="#cover"><span class="no">00</span><span>封面</span></a>
+    <a class="toc-item" href="#brief"><span class="no">01</span><span>摘要</span></a>
+    <a class="toc-item" href="#ledger"><span class="no">02</span><span>变更台账</span></a>
+    <a class="toc-item" href="#cut"><span class="no">03</span><span>删与留</span></a>
+    <a class="toc-item" href="#tree"><span class="no">04</span><span>模块树</span></a>
+    <a class="toc-item" href="#timeline"><span class="no">05</span><span>入场时间轨</span></a>
+    <a class="toc-item" href="#build"><span class="no">06</span><span>构建与安装</span></a>
+    <a class="toc-item" href="#release"><span class="no">07</span><span>版本与清单</span></a>
+    <a class="toc-item" href="#qa"><span class="no">08</span><span>问答</span></a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-read">
+    <span>读到</span>
+    <span id="readPct">0%</span>
+  </div>
+
+  <div class="rail-foot">
+    <span class="rail-note">Fe Cloud · 2026<br />Kotlin·Compose</span>
+    <button class="switch" id="themeToggle" type="button" aria-label="切换主题">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <g class="ic-moon"><path d="M20.5 14.2A8.6 8.6 0 1 1 10 3.7a6.6 6.6 0 0 0 10.5 10.5Z" /></g>
+        <g class="ic-sun"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4" /></g>
+      </svg>
+      <span id="themeLabel">Dark</span>
+    </button>
+  </div>
+</aside>
+
+<header class="topbar">
+  <span class="topbar-title">Fe Cloud · 改版档案</span>
+  <button class="topbar-btn" id="themeToggleMobile" type="button" aria-label="切换主题">Theme</button>
 </header>
 
-<main id="top">
-  <section class="hero" id="hero">
-    <div class="hero-glow" aria-hidden="true"></div>
-    <div class="hero-grid">
-      <div class="hero-copy">
-        <div class="pill" id="versionPill">
-          <span class="pill-dot"></span>
-          <span id="versionText">v2.3.0.1-fix</span>
-          <span class="pill-sep"></span>
-          <span class="pill-muted">versionCode <span id="versionCode">25</span></span>
-        </div>
-        <h1 class="hero-title">
-          只读云端，<br />
-          <span class="grad">不做多余的事</span>
-        </h1>
-        <p class="hero-sub" id="typer" aria-live="polite"></p>
-        <p class="hero-desc">
-          面向 ETS100（e听说）的答案阅读客户端。已移除第三方账户系统与 Shizuku / Root / 漏洞直读三种本地模式，
-          仅保留官方云端 API 与账号登录链路；引导、列表、页面过渡全部改用 draw-phase 动画。
-        </p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="#build">下载 APK</a>
-          <a class="btn btn-ghost" href="#diff">看改造了什么</a>
-        </div>
-        <div class="hero-stats" id="heroStats">
-          <div class="stat">
-            <span class="stat-num" data-count="2">0</span>
-            <span class="stat-label">个模块整体移除</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num" data-count="3">0</span>
-            <span class="stat-label">种本地读取下线</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num" data-count="7">0</span>
-            <span class="stat-label">处动画重写</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num" data-count="0">0</span>
-            <span class="stat-label">编译错误</span>
-          </div>
-        </div>
-      </div>
+<div class="readbar" aria-hidden="true"><div class="readbar-fill" id="readFill"></div></div>
 
-      <div class="hero-device" id="tiltCard">
-        <div class="device">
-          <div class="device-notch"></div>
-          <div class="device-screen">
-            <div class="screen-statusbar">
-              <span>5:40</span>
-              <span class="sb-right"><i class="sb-dot"></i> 4G <span class="sb-batt">51</span></span>
-            </div>
-            <div class="screen-body">
-              <div class="screen-card screen-hero">
-                <div class="sc-icon"></div>
-                <div class="sc-title">云端作业</div>
-                <div class="sc-line"></div>
-                <div class="sc-line short"></div>
-              </div>
-              <div class="screen-card screen-stagger" id="staggerDemo">
-                <div class="st-item"></div>
-                <div class="st-item"></div>
-                <div class="st-item"></div>
-                <div class="st-item"></div>
-              </div>
-            </div>
-            <div class="screen-fab">读取</div>
-          </div>
-        </div>
-        <div class="device-shadow" aria-hidden="true"></div>
-      </div>
-    </div>
-  </section>
+<main class="page">
+  <div class="wrap">
 
-  <section class="section" id="features">
-    <div class="section-head">
-      <span class="eyebrow">特性</span>
-      <h2>六个改动点，一条链路</h2>
-      <p>从模块裁剪到动画实现，全部落在可验证的代码位置上。</p>
-    </div>
-    <div class="cards" id="featureCards">
-      <article class="card" data-spot>
-        <div class="card-icon">01</div>
-        <h3>账户系统剥离</h3>
-        <p><code>data:account</code> 与 <code>feature:account</code> 两个 Gradle 模块整体删除，账户登录、绑定、头像、验证码入口全部消失。</p>
-        <ul class="card-list">
-          <li>settings.gradle.kts 移除 include</li>
-          <li>6 个模块清理 project 依赖</li>
-        </ul>
-      </article>
-      <article class="card" data-spot>
-        <div class="card-icon">02</div>
-        <h3>三种本地读取下线</h3>
-        <p>Shizuku / Root / 漏洞直读从激活页、引导页、首页状态与阅读页同时移除，不再申请全文件访问权限。</p>
-        <ul class="card-list">
-          <li>Shizuku / Sui 运行时初始化移除</li>
-          <li>shizuku-api 依赖删除</li>
-        </ul>
-      </article>
-      <article class="card" data-spot>
-        <div class="card-icon">03</div>
-        <h3>云端链路保留</h3>
-        <p><code>ETS100AuthManager</code>、<code>ETS100ApiClient</code>、作业下载与模板合并、<code>PaperSource(Cloud)</code> 全部保留。</p>
-        <ul class="card-list">
-          <li>手机号 + 密码登录</li>
-          <li>设备绑定短信验证</li>
-        </ul>
-      </article>
-      <article class="card" data-spot>
-        <div class="card-icon">04</div>
-        <h3>draw-phase 动画</h3>
-        <p>用 <code>Animatable</code> + <code>graphicsLayer</code> 在绘制阶段直读属性，动画期间不触发重组。</p>
-        <ul class="card-list">
-          <li>摒弃 animateFloatAsState 逐帧重组</li>
-          <li>弹簧/补间混用做节奏</li>
-        </ul>
-      </article>
-      <article class="card" data-spot>
-        <div class="card-icon">05</div>
-        <h3>阶梯入场</h3>
-        <p><code>StaggerEntrance</code> 按 index 延迟入场，45ms 步进，上限 8 项；LazyColumn 只组合可见项，天然首屏生效。</p>
-        <ul class="card-list">
-          <li>四态容器统一接入</li>
-          <li>深列表不累积等待</li>
-        </ul>
-      </article>
-      <article class="card" data-spot>
-        <div class="card-icon">06</div>
-        <h3>过渡不裁剪</h3>
-        <p>步骤切换增加 <code>SizeTransform(clip = false)</code>，消除高度插值导致的裁切与跳变。</p>
-        <ul class="card-list">
-          <li>显式 tween 时长</li>
-          <li>onboarding → 主界面 alpha 淡入</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section class="section section-alt" id="diff">
-    <div class="section-head">
-      <span class="eyebrow">改造对比</span>
-      <h2>保留了什么，删掉了什么</h2>
-      <p>切换分类查看具体条目。</p>
-    </div>
-    <div class="tabs" role="tablist" aria-label="改造对比">
-      <button class="tab is-active" role="tab" aria-selected="true" data-tab="removed">已移除</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="kept">已保留</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="anim">动画改动</button>
-    </div>
-    <div class="tab-panels">
-      <div class="tab-panel is-active" data-panel="removed" role="tabpanel">
-        <div class="list-row"><span class="tag tag-red">模块</span><div><b>data:account / feature:account</b><p>账户登录、个人中心、绑定、LastStudio 云端授权、头像、验证码</p></div></div>
-        <div class="list-row"><span class="tag tag-red">模式</span><div><b>Shizuku</b><p>激活面板、引导卡片、首页状态、ShizukuRuntimeState 初始化</p></div></div>
-        <div class="list-row"><span class="tag tag-red">模式</span><div><b>Root</b><p>RootManager / ZWCHelper 调用链与权限申请</p></div></div>
-        <div class="list-row"><span class="tag tag-red">模式</span><div><b>漏洞直读</b><p>DirectRead 面板、本地加载器、本地解析状态、本地目录导出</p></div></div>
-        <div class="list-row"><span class="tag tag-red">UI</span><div><b>本地读取相关组件</b><p>ReadLocalLoader / ReadLocalParsingState / LocalAnswerParsingCard / VerificationDialog</p></div></div>
-      </div>
-      <div class="tab-panel" data-panel="kept" role="tabpanel">
-        <div class="list-row"><span class="tag tag-green">账号</span><div><b>ETS100AuthManager</b><p>手机号 + 密码登录、token 持久化、设备绑定短信验证</p></div></div>
-        <div class="list-row"><span class="tag tag-green">账号</span><div><b>ChangyanWebLoginActivity</b><p>畅言网页登录，作为账号获取的备用入口</p></div></div>
-        <div class="list-row"><span class="tag tag-green">云端</span><div><b>ETS100ApiClient</b><p>作业列表、下载、模板合并、答案解析</p></div></div>
-        <div class="list-row"><span class="tag tag-green">云端</span><div><b>PaperSource(Cloud) / CloudMerge</b><p>云端试卷数据模型与合并模板</p></div></div>
-        <div class="list-row"><span class="tag tag-green">Native</span><div><b>libresolver.so / libcloud.so</b><p>arm64-v8a 原生解析组件</p></div></div>
-      </div>
-      <div class="tab-panel" data-panel="anim" role="tabpanel">
-        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>WelcomeStep</b><p>logo spring 缩放 + alpha，标题 160ms、特性 340ms、CTA 560ms 阶梯入场</p></div></div>
-        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>ModeStep / FinishStep</b><p>三段 stagger 上滑淡入，图标弹性缩放</p></div></div>
-        <div class="list-row"><span class="tag tag-blue">引导</span><div><b>StepIndicator</b><p>连续进度条 scaleX 插值 + 文案淡入切换</p></div></div>
-        <div class="list-row"><span class="tag tag-blue">切换</span><div><b>OnboardingScreen</b><p>slide + fade，SizeTransform(clip = false) 防裁剪</p></div></div>
-        <div class="list-row"><span class="tag tag-blue">阅读</span><div><b>ReadScreen / ReadCloudContent</b><p>四态入场 + 列表项 StaggerEntrance（45ms 步进）</p></div></div>
-        <div class="list-row"><span class="tag tag-blue">设置</span><div><b>SettingsScreen</b><p>内容块淡入 + 28dp 上滑</p></div></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="arch">
-    <div class="section-head">
-      <span class="eyebrow">架构</span>
-      <h2>模块依赖</h2>
-      <p>点击任一节点查看职责与关键类型。</p>
-    </div>
-    <div class="arch-wrap">
-      <div class="arch-graph" id="archGraph">
-        <button class="node node-app" data-node="app">app</button>
-        <div class="arch-row">
-          <button class="node" data-node="core">core/*</button>
-          <button class="node" data-node="data">data/*</button>
-          <button class="node" data-node="feature">feature/*</button>
+    <!-- ============ 00 封面 ============ -->
+    <section class="cover" id="cover">
+      <p class="kicker">
+        ETS100 云端阅读器 · 改版档案 · <span id="verName">v2.3.0.1-fix</span>
+      </p>
+      <h1 class="cover-title">只读云端，<br /><em>不做多余的事</em></h1>
+      <aside class="cover-aside">
+        <div class="aside-block">
+          <p class="aside-label">状态</p>
+          <p class="aside-text">源码改造完成 · 本地仓库已提交<br />构建 <b>BUILD SUCCESSFUL</b> · 0 error</p>
         </div>
-        <div class="arch-row arch-row-sub">
-          <button class="node node-sub" data-node="ets100">data:ets100</button>
-          <button class="node node-sub" data-node="read">feature:read</button>
-          <button class="node node-sub" data-node="onboarding">feature:onboarding</button>
-          <button class="node node-sub" data-node="activation">feature:activation</button>
+        <div class="aside-block">
+          <p class="aside-label">产物</p>
+          <p class="aside-text">app-debug.apk<br />30.9 MB · V2 签名通过</p>
         </div>
-        <div class="arch-row arch-row-sub">
-          <button class="node node-removed" disabled>data:account（已移除）</button>
-          <button class="node node-removed" disabled>feature:account（已移除）</button>
+        <div class="aside-block">
+          <p class="aside-label">安装</p>
+          <p class="aside-text">本地签名与历次一致<br />覆盖安装，无需卸载</p>
         </div>
-      </div>
-      <aside class="arch-detail" id="archDetail" aria-live="polite">
-        <h3>选择左侧节点</h3>
-        <p>每个模块的职责、关键类与被裁剪部分都会显示在这里。</p>
+        <div class="aside-block">
+          <p class="aside-label">许可</p>
+          <p class="aside-text">原项目声明闭源禁再分发<br />仅供个人学习与备份</p>
+        </div>
       </aside>
-    </div>
-  </section>
 
-  <section class="section section-alt" id="motion">
-    <div class="section-head">
-      <span class="eyebrow">动画</span>
-      <h2>入场节奏可视化</h2>
-      <p>重播可观察每一段的延迟与时长。</p>
-    </div>
-    <div class="motion-demo">
-      <div class="motion-stage" id="motionStage">
-        <div class="m-node m-logo">logo</div>
-        <div class="m-node m-title">标题</div>
-        <div class="m-node m-row">特性 1</div>
-        <div class="m-node m-row">特性 2</div>
-        <div class="m-node m-row">特性 3</div>
-        <div class="m-node m-cta">CTA</div>
+      <p class="cover-lead">
+        这是对 ETS100（e听说）答案阅读客户端的一次<strong>结构性删改</strong>：
+        拆掉第三方账户模块，关停 Shizuku / Root / 漏洞直读三条本地链路，
+        只留下<b>官方云端 API</b> 与账号登录；动画体系整体改为 draw-phase 直读，
+        列表与引导页补上阶梯入场。
+      </p>
+
+      <table class="meta-table">
+        <tbody>
+          <tr><th>应用 ID</th><td>com.shuaiqiu.fuckets100</td></tr>
+          <tr><th>版本</th><td><span id="verName2">v2.3.0.1-fix</span> <span class="dim">/ versionCode <span id="verCode">25</span></span></td></tr>
+          <tr><th>SDK</th><td>minSdk 26 <span class="dim">·</span> compile / target 37</td></tr>
+          <tr><th>工具链</th><td>Gradle 9.6.1 <span class="dim">·</span> AGP 9.3.1 <span class="dim">·</span> Kotlin 2.4.10 <span class="dim">·</span> JDK 17</td></tr>
+          <tr><th>签名</th><td>Android Debug <span class="dim">SHA-256 79186029…d9c5</span></td></tr>
+          <tr><th>形态</th><td>Kotlin Multi-module <span class="dim">+ Jetpack Compose</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 01 摘要 ============ -->
+    <section class="section" id="brief">
+      <div class="section-head">
+        <div class="section-no">01</div>
+        <div>
+          <h2 class="section-title">摘要</h2>
+          <p class="section-note">四个数字概括这次改版：删掉两个模块、关停三种本地读取、重写七处动画，编译错误为零。</p>
+        </div>
       </div>
-      <div class="motion-side">
-        <div class="motion-controls">
-          <button class="btn btn-primary" id="motionReplay">重播</button>
-          <div class="speed" id="speedGroup" role="group" aria-label="速度">
-            <button class="speed-btn is-active" data-speed="1">1×</button>
-            <button class="speed-btn" data-speed="2">2×</button>
-            <button class="speed-btn" data-speed="4">4×</button>
+
+      <div class="figures">
+        <div class="figure">
+          <span class="fig-num" data-count="2">0</span>
+          <span class="fig-cap">模块整体移除</span>
+        </div>
+        <div class="figure">
+          <span class="fig-num" data-count="3">0</span>
+          <span class="fig-cap">本地读取下线</span>
+        </div>
+        <div class="figure">
+          <span class="fig-num" data-count="7">0</span>
+          <span class="fig-cap">动画重写</span>
+        </div>
+        <div class="figure">
+          <span class="fig-num" data-count="0">0</span>
+          <span class="fig-cap">编译错误</span>
+        </div>
+      </div>
+
+      <p class="lede" style="margin-top:26px;">
+        改版前后的取舍只有一条标准：凡是能在云端拿到答案的路径保留并收敛，凡是依赖本机权限、漏洞或第三方账户的路径全部删除。
+        因此 <code>data:account</code> 与 <code>feature:account</code> 两个 Gradle 模块被整体移出，
+        settings 中的 <code>include</code> 与六个模块的 project 依赖一并清理。
+      </p>
+    </section>
+
+    <!-- ============ 02 变更台账 ============ -->
+    <section class="section" id="ledger">
+      <div class="section-head">
+        <div class="section-no">02</div>
+        <div>
+          <h2 class="section-title">变更台账</h2>
+          <p class="section-note">八条记录，按改动顺序排列。点开任一条查看落到具体文件上的结果。</p>
+        </div>
+      </div>
+
+      <div class="ledger" id="ledgerList">
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">01</span>
+            <span class="entry-title">拆掉第三方账户系统</span>
+            <span class="entry-tag">模块</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>账户登录、个人中心、设备绑定、云端授权、头像与验证码入口原本集中在两个独立模块里，与云端读取链路并非强耦合，整体移除后主链路无需改写调用签名。</p>
+              <span class="clause"><span><code>settings.gradle.kts</code> 移除两个 <code>include</code></span></span>
+              <span class="clause"><span>六个模块的 <code>project(":data:account")</code> 依赖清零</span></span>
+              <span class="clause"><span>导航图、首页入口、设置页账户区块同步删除</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">02</span>
+            <span class="entry-title">三种本地读取下线</span>
+            <span class="entry-tag">模式</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>Shizuku、Root、漏洞直读三条链路共享同一套本地加载器与解析状态机；删除后 <code>ActivationMode</code> 只剩云端一项，激活页也不再需要权限申请流程。</p>
+              <span class="clause"><span><code>ShizukuRuntimeState</code>、<code>RootManager</code>、<code>ZWCHelper</code> 调用与权限申请移除</span></span>
+              <span class="clause"><span><code>shizuku-api</code> 依赖、<code>DirectRead</code> 面板、本地目录导出删除</span></span>
+              <span class="clause"><span>首页状态条与引导卡片不再展示本地模式选项</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">03</span>
+            <span class="entry-title">云端链路收敛为唯一路径</span>
+            <span class="entry-tag">架构</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>阅读页从“多来源选择”退化为单一来源，<code>PaperSource</code> 只剩 <code>Cloud</code> 分支；加载、解析、模板合并、答案渲染全部走 <code>ETS100ApiClient</code>。</p>
+              <span class="clause"><span><code>ETS100AuthManager</code>：手机号 + 密码登录，持有 token 与 deviceCode</span></span>
+              <span class="clause"><span><code>CloudMerge</code> / <code>CloudTemplate</code>：试卷模板合并</span></span>
+              <span class="clause"><span>native 组件 <code>libresolver.so</code>、<code>libcloud.so</code> 保留</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">04</span>
+            <span class="entry-title">恢复原生登录形态</span>
+            <span class="entry-tag">交互</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>第一版改造把激活页做成了极简跳转页，与原始形态不符；随后从原始工程恢复手机号 + 密码表单与设备绑定短信验证弹窗，包名迁到 <code>feature.activation</code>。</p>
+              <span class="clause"><span><code>CloudActivationScreen</code>：账号、密码、协议勾选、提交态</span></span>
+              <span class="clause"><span><code>DeviceVerificationDialog</code>：设备绑定短信校验</span></span>
+              <span class="clause"><span><code>ChangyanWebLoginActivity</code> 保留为网页登录备用入口</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">05</span>
+            <span class="entry-title">动画改到 draw phase</span>
+            <span class="entry-tag">动画</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>原先在 <code>graphicsLayer</code> 里读取 <code>animateFloatAsState</code> 的普通 Float，每帧都在组合阶段取新值，导致整棵子树逐帧重组；换成 <code>Animatable</code> 后在 draw 阶段直读 <code>.value</code>，重组次数降为一次。</p>
+              <span class="clause"><span>欢迎页 logo 用 spring 缩放，标题 / 特性 / CTA 按 160 – 560ms 延迟淡入上滑</span></span>
+              <span class="clause"><span>运行模式页与完成页三段 stagger，步骤条用连续 <code>scaleX</code> 插值</span></span>
+              <span class="clause"><span>步骤切换保留 <code>slideInHorizontally</code> + <code>fadeIn</code></span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">06</span>
+            <span class="entry-title">列表与设置页补阶梯入场</span>
+            <span class="entry-tag">动画</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>新增 <code>StaggerEntrance</code> 容器，按 index 延迟 45ms 步进、上限 8 项；<code>LazyColumn</code> 只对组合可见项生效，避免深列表长时间排队。</p>
+              <span class="clause"><span>阅读页四态（gate / loading / error / list）统一接入</span></span>
+              <span class="clause"><span>设置页内容块、引导完成页摘要卡同步使用</span></span>
+              <span class="clause"><span>与弹簧、补间动画混用，节奏不互相打架</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">07</span>
+            <span class="entry-title">消掉过渡里的高度裁剪</span>
+            <span class="entry-tag">动画</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>引导页三步高度不同，默认 <code>SizeTransform</code> 会裁切子内容，造成切换瞬间的跳变与文字截断；关闭裁剪后由布局自身承担高度变化。</p>
+              <span class="clause"><span><code>SizeTransform(clip = false)</code> 应用于步骤切换</span></span>
+              <span class="clause"><span>onboarding → 主界面改为 alpha 0 → 1 淡入</span></span>
+              <span class="clause"><span>显式声明 tween 时长，避免默认弹簧在长距离下过冲</span></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry">
+          <button class="entry-head" type="button" aria-expanded="false">
+            <span class="entry-no">08</span>
+            <span class="entry-title">版本清单与这份档案</span>
+            <span class="entry-tag">工程</span>
+          </button>
+          <div class="entry-body">
+            <div class="entry-body-inner">
+              <p>仓库根写入 <code>version.json</code>（versionName / versionCode / apkUrl / notes / publishedAt），App 与站点共用；本页即 <code>docs/</code> 下的静态站点，由 Pages 工作流发布。</p>
+              <span class="clause"><span>站点请求顺序：同源 → <code>ghproxy.net</code> → <code>gh-proxy.com</code> → raw 直连</span></span>
+              <span class="clause"><span>以 versionCode 数值比对为主，缺失时回退版本名字符串</span></span>
+              <span class="clause"><span>纯静态，无框架、无构建步骤</span></span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ 03 删与留 ============ -->
+    <section class="section" id="cut">
+      <div class="section-head">
+        <div class="section-no">03</div>
+        <div>
+          <h2 class="section-title">删与留</h2>
+          <p class="section-note">左列进入视图时划上删除线；右列是刻意保留、且仍在运行的部分。</p>
+        </div>
+      </div>
+
+      <div class="cut">
+        <div class="cut-col">
+          <div class="cut-head"><span>移除</span><b>05</b></div>
+          <div class="cut-row" data-strike>
+            <span><span class="what">data:account / feature:account</span><span class="how">账户登录、个人中心、绑定、头像、验证码</span></span>
+            <span class="mark">module</span>
+          </div>
+          <div class="cut-row" data-strike>
+            <span><span class="what">Shizuku</span><span class="how">激活面板、运行时初始化、权限申请</span></span>
+            <span class="mark">mode</span>
+          </div>
+          <div class="cut-row" data-strike>
+            <span><span class="what">Root</span><span class="how">RootManager / ZWCHelper 调用链</span></span>
+            <span class="mark">mode</span>
+          </div>
+          <div class="cut-row" data-strike>
+            <span><span class="what">漏洞直读</span><span class="how">DirectRead 面板、本地加载器、目录导出</span></span>
+            <span class="mark">mode</span>
+          </div>
+          <div class="cut-row" data-strike>
+            <span><span class="what">本地解析组件</span><span class="how">ReadLocalLoader、LocalAnswerParsingCard</span></span>
+            <span class="mark">ui</span>
           </div>
         </div>
-        <table class="timeline">
-          <thead><tr><th>元素</th><th>延迟</th><th>时长</th></tr></thead>
-          <tbody>
-            <tr><td>logo</td><td>0ms</td><td>spring</td></tr>
-            <tr><td>标题</td><td>160ms</td><td>420ms</td></tr>
-            <tr><td>特性列表</td><td>340ms</td><td>480ms</td></tr>
-            <tr><td>CTA</td><td>560ms</td><td>420ms</td></tr>
-          </tbody>
-        </table>
-        <pre class="code"><code>val logoScale = remember { Animatable(0.5f) }
-LaunchedEffect(Unit) {
-    launch { logoScale.animateTo(1f, spring(...)) }
-}
-Modifier.graphicsLayer { scaleX = logoScale.value }</code></pre>
-      </div>
-    </div>
-  </section>
 
-  <section class="section" id="build">
-    <div class="section-head">
-      <span class="eyebrow">构建与下载</span>
-      <h2>本地构建 / 安装</h2>
-      <p>命令可一键复制。</p>
-    </div>
-    <div class="build-grid">
-      <div class="build-card">
-        <h3>环境</h3>
-        <ul class="kv">
-          <li><span>JDK</span><b>17</b></li>
-          <li><span>Gradle</span><b>9.6.1 wrapper</b></li>
-          <li><span>AGP / Kotlin</span><b>9.3.1 / 2.4.10</b></li>
-          <li><span>compileSdk</span><b>37</b></li>
-        </ul>
-      </div>
-      <div class="build-card">
-        <h3>编译</h3>
-        <div class="copybox">
-          <pre><code id="cmdBuild">export JAVA_HOME=/path/to/jdk-17
-export ANDROID_HOME=/path/to/android-sdk
-./gradlew :app:assembleDebug</code></pre>
-          <button class="copy-btn" data-copy="#cmdBuild">复制</button>
+        <div class="cut-col">
+          <div class="cut-head"><span>保留</span><b>06</b></div>
+          <div class="cut-row">
+            <span><span class="what">ETS100AuthManager</span><span class="how">手机号 + 密码、token、deviceCode</span></span>
+            <span class="mark">data</span>
+          </div>
+          <div class="cut-row">
+            <span><span class="what">ETS100ApiClient</span><span class="how">作业列表、下载、异常类型</span></span>
+            <span class="mark">data</span>
+          </div>
+          <div class="cut-row">
+            <span><span class="what">云端模板合并</span><span class="how">CloudMerge / CloudTemplate / PaperSource(Cloud)</span></span>
+            <span class="mark">core</span>
+          </div>
+          <div class="cut-row">
+            <span><span class="what">设备绑定验证</span><span class="how">DeviceVerificationDialog 短信校验</span></span>
+            <span class="mark">ui</span>
+          </div>
+          <div class="cut-row">
+            <span><span class="what">native 解析库</span><span class="how">libresolver.so / libcloud.so（arm64-v8a）</span></span>
+            <span class="mark">jni</span>
+          </div>
+          <div class="cut-row">
+            <span><span class="what">畅言网页登录</span><span class="how">ChangyanWebLoginActivity 备用入口</span></span>
+            <span class="mark">ui</span>
+          </div>
         </div>
-        <p class="hint">产物：<code>app/build/outputs/apk/debug/app-debug.apk</code></p>
       </div>
-      <div class="build-card">
-        <h3>安装</h3>
-        <div class="copybox">
-          <pre><code id="cmdInstall">adb install -r app-debug.apk</code></pre>
-          <button class="copy-btn" data-copy="#cmdInstall">复制</button>
-        </div>
-        <p class="hint">Debug 签名 SHA-256 <code>79186029…d9c5</code>，与历史包一致可覆盖安装。</p>
-      </div>
-      <div class="build-card">
-        <h3>版本清单</h3>
-        <p class="hint">站点会请求仓库根 <code>version.json</code> 校验版本。</p>
-        <button class="btn btn-ghost" id="checkVersion">检查版本</button>
-        <div class="json-out" id="versionOut" hidden></div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="section section-alt" id="faq">
-    <div class="section-head">
-      <span class="eyebrow">FAQ</span>
-      <h2>常见问题</h2>
-    </div>
-    <div class="faq" id="faqList">
-      <details>
-        <summary>为什么登录页变成了手机号 + 密码？</summary>
-        <p>云端模式使用 <code>ETS100AuthManager</code> 直接调用 ETS100 登录接口（手机号 + 密码 + deviceCode），首次设备需短信验证。畅言网页登录仅作为备用入口。</p>
-      </details>
-      <details>
-        <summary>为什么不再需要 Shizuku 或 Root？</summary>
-        <p>三种本地读取模式已整体移除，读取路径只走官方云端 API，因此不再申请全文件访问权限，也不再初始化 Shizuku/Sui 运行时。</p>
-      </details>
-      <details>
-        <summary>覆盖安装会丢数据吗？</summary>
-        <p>签名证书一致，覆盖安装保留 <code>SharedPreferences</code>。若想重新体验引导动画，需清除应用数据，而非卸载重装。</p>
-      </details>
-      <details>
-        <summary>动画为什么改成 Animatable？</summary>
-        <p><code>animateFloatAsState</code> 在 <code>graphicsLayer</code> 里读普通 Float 会导致每帧重组整棵树；改用 <code>Animatable.value</code> 在 draw phase 直读，动画期间零重组。</p>
-      </details>
-      <details>
-        <summary>这个仓库可以公开分发吗？</summary>
-        <p>原始项目声明源码闭源并禁止重新打包分发。本仓库仅作本地改造与个人备份，公开分发需先取得原始作者授权。</p>
-      </details>
-    </div>
-  </section>
+    <!-- ============ 04 模块树 ============ -->
+    <section class="section" id="tree">
+      <div class="section-head">
+        <div class="section-no">04</div>
+        <div>
+          <h2 class="section-title">模块树</h2>
+          <p class="section-note">点击任一模块，下方说明区切换为它的职责与关键类型；划掉的两行已不在构建图里。</p>
+        </div>
+      </div>
+
+      <div class="tree">
+        <span class="tree-line" data-mod="app"><span class="indent">├─ </span><span class="name">app</span> <span class="note">入口 / 导航 / 主题 / 畅言登录</span></span>
+        <span class="tree-line" data-mod="core"><span class="indent">├─ </span><span class="name">core</span> <span class="note">common · model · designsystem · settings · platform · navigation</span></span>
+        <span class="tree-line" data-mod="data"><span class="indent">├─ </span><span class="name">data</span></span>
+        <span class="tree-line" data-mod="content"><span class="indent">│  ├─ </span><span class="name">content</span> <span class="note">远端配置 · 公告 · 更新状态 · 协议</span></span>
+        <span class="tree-line" data-mod="ets100"><span class="indent">│  ├─ </span><span class="name">ets100</span> <span class="note">账号 · 云端 API · 试卷模型</span></span>
+        <span class="tree-line is-removed" data-mod="removed-account"><span class="indent">│  └─ </span><span class="name">account</span> <span class="note">已移除</span></span>
+        <span class="tree-line" data-mod="feature"><span class="indent">├─ </span><span class="name">feature</span></span>
+        <span class="tree-line" data-mod="activation"><span class="indent">│  ├─ </span><span class="name">activation</span> <span class="note">云端激活（手机号 + 密码）</span></span>
+        <span class="tree-line" data-mod="onboarding"><span class="indent">│  ├─ </span><span class="name">onboarding</span> <span class="note">三步引导</span></span>
+        <span class="tree-line" data-mod="home"><span class="indent">│  ├─ </span><span class="name">home</span> <span class="note">首页 · 作业列表</span></span>
+        <span class="tree-line" data-mod="read"><span class="indent">│  ├─ </span><span class="name">read</span> <span class="note">四态阅读 · 阶梯入场</span></span>
+        <span class="tree-line" data-mod="settings"><span class="indent">│  ├─ </span><span class="name">settings</span> <span class="note">设置 · 关于</span></span>
+        <span class="tree-line" data-mod="shared"><span class="indent">│  ├─ </span><span class="name">shared</span> <span class="note">共享组件</span></span>
+        <span class="tree-line is-removed" data-mod="removed-account-ui"><span class="indent">│  └─ </span><span class="name">account</span> <span class="note">已移除</span></span>
+        <span class="tree-line" data-mod="baseline"><span class="indent">├─ </span><span class="name">baselineprofile</span></span>
+        <span class="tree-line" data-mod="docs"><span class="indent">├─ </span><span class="name">docs</span> <span class="note">本页 · Pages 发布目录</span></span>
+        <span class="tree-line" data-mod="scripts"><span class="indent">└─ </span><span class="name">scripts</span> <span class="note">构建校验 · 模块边界检查</span></span>
+      </div>
+
+      <div class="tree-read" id="treeRead">
+        <h4 id="treeReadTitle">app</h4>
+        <p id="treeReadDesc">应用入口与主题层。</p>
+        <ul id="treeReadList"></ul>
+      </div>
+    </section>
+
+    <!-- ============ 05 入场时间轨 ============ -->
+    <section class="section" id="timeline">
+      <div class="section-head">
+        <div class="section-no">05</div>
+        <div>
+          <h2 class="section-title">入场时间轨</h2>
+          <p class="section-note">欢迎页六段入场的延迟与时长。拖动下方滑杆逐帧检查，或按 1× / 2× / 4× 播放。</p>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="transport-btn" id="playBtn" type="button">▶ 播放</button>
+        <button class="transport-btn is-ghost is-on" data-speed="1" type="button">1×</button>
+        <button class="transport-btn is-ghost" data-speed="2" type="button">2×</button>
+        <button class="transport-btn is-ghost" data-speed="4" type="button">4×</button>
+        <span class="transport-clock"><span id="clock">0000</span> ms / 1000 ms</span>
+      </div>
+
+      <div class="track-head"><span>元素</span><span>0 – 1000 ms</span></div>
+
+      <div id="tracks">
+        <div class="track-row" data-delay="0" data-dur="300">
+          <div class="track-label"><span>logo</span><i>spring · 0.5 → 1.0</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+        <div class="track-row" data-delay="160" data-dur="420">
+          <div class="track-label"><span>标题</span><i>fade + 上滑</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+        <div class="track-row" data-delay="340" data-dur="480">
+          <div class="track-label"><span>特性 1</span><i>fade + 上滑</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+        <div class="track-row" data-delay="400" data-dur="480">
+          <div class="track-label"><span>特性 2</span><i>fade + 上滑</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+        <div class="track-row" data-delay="460" data-dur="480">
+          <div class="track-label"><span>特性 3</span><i>fade + 上滑</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+        <div class="track-row" data-delay="560" data-dur="420">
+          <div class="track-label"><span>CTA</span><i>fade + 上滑</i></div>
+          <div class="track-lane"><div class="track-bar"></div><div class="playhead"></div></div>
+        </div>
+      </div>
+
+      <div class="time-ruler">
+        <span></span>
+        <span class="ruler-ticks"><span>0</span><span>250</span><span>500</span><span>750</span><span>1000</span></span>
+      </div>
+
+      <input class="scrub" id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="拖动播放头" />
+
+      <p class="side-note" style="margin-top:24px;">
+        所有动画都在 <b>draw 阶段</b>读取 <code>Animatable.value</code>，
+        组合阶段不产生逐帧重组；这也是“卡顿消失”的直接原因。
+      </p>
+    </section>
+
+    <!-- ============ 06 构建 ============ -->
+    <section class="section" id="build">
+      <div class="section-head">
+        <div class="section-no">06</div>
+        <div>
+          <h2 class="section-title">构建与安装</h2>
+          <p class="section-note">三条命令可复制。环境变量按本机路径替换。</p>
+        </div>
+      </div>
+
+      <div class="build-grid">
+        <div>
+          <div class="cmd">
+            <div class="cmd-head"><span>Toolchain</span><button class="copy" data-copy="cmdEnv" type="button">Copy</button></div>
+            <div class="cmd-body" id="cmdEnv"><span class="pr">$ </span>export JAVA_HOME=/path/to/jdk-17
+<span class="pr">$ </span>export ANDROID_HOME=/path/to/android-sdk
+<span class="pr">$ </span>export PATH=$ANDROID_HOME/platform-tools:$PATH</div>
+          </div>
+
+          <div class="cmd" style="margin-top:18px;">
+            <div class="cmd-head"><span>Assemble</span><button class="copy" data-copy="cmdBuild" type="button">Copy</button></div>
+            <div class="cmd-body" id="cmdBuild"><span class="pr">$ </span>./gradlew :app:assembleDebug --no-daemon
+<span class="pr">→ </span>app/build/outputs/apk/debug/app-debug.apk</div>
+          </div>
+        </div>
+
+        <div>
+          <p class="side-note">
+            产物签名沿用 <b>Android Debug</b> 证书（SHA-256 <code>79186029…d9c5</code>），
+            与历次交付包一致，<b>可直接覆盖安装</b>，无需卸载。
+          </p>
+          <div class="cmd">
+            <div class="cmd-head"><span>Install</span><button class="copy" data-copy="cmdInstall" type="button">Copy</button></div>
+            <div class="cmd-body" id="cmdInstall"><span class="pr">$ </span>adb install -r app-debug.apk</div>
+          </div>
+
+          <ol class="step-list" style="margin-top:22px;">
+            <li><span><b>环境</b>：JDK 17、SDK 平台 <code>android-37.0</code>（注意不是 <code>android-37</code>）。</span></li>
+            <li><span><b>授权</b>：<code>cmdline-tools</code> 下工具默认无可执行位，先 <code>chmod +x</code>。</span></li>
+            <li><span><b>编译</b>：首次会拉依赖，缓存目录锁告警属收尾噪音。</span></li>
+            <li><span><b>校验</b>：<code>apksigner verify</code> 与 <code>aapt2 dump badging</code> 核对版本与证书。</span></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 07 版本 ============ -->
+    <section class="section" id="release">
+      <div class="section-head">
+        <div class="section-no">07</div>
+        <div>
+          <h2 class="section-title">版本与清单</h2>
+          <p class="section-note">仓库根 <code>version.json</code> 为唯一清单，App 与本页共用；下方按钮会真实发起请求。</p>
+        </div>
+      </div>
+
+      <table class="ver-table">
+        <thead>
+          <tr><th>字段</th><th>值</th><th>来源</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>versionName</td><td id="tblName">2.3.0.1-fix</td><td>version.json</td></tr>
+          <tr><td>versionCode</td><td id="tblCode">25</td><td>version.json</td></tr>
+          <tr><td>minSdk</td><td>26</td><td>build.gradle.kts</td></tr>
+          <tr><td>targetSdk</td><td>37</td><td>build.gradle.kts</td></tr>
+          <tr><td>apkUrl</td><td>待发布 Release 后填入</td><td>version.json</td></tr>
+        </tbody>
+      </table>
+
+      <div class="probe">
+        <button class="transport-btn" id="probeBtn" type="button">拉取清单</button>
+        <button class="transport-btn is-ghost" id="probeForce" type="button">绕过缓存再试</button>
+      </div>
+
+      <div class="console" id="consoleOut" hidden></div>
+    </section>
+
+    <!-- ============ 08 问答 ============ -->
+    <section class="section" id="qa">
+      <div class="section-head">
+        <div class="section-no">08</div>
+        <div>
+          <h2 class="section-title">问答</h2>
+          <p class="section-note">五条，都是改动过程中真实出现过的疑问。</p>
+        </div>
+      </div>
+
+      <div class="qa" id="qaList">
+        <div class="qa-item">
+          <button class="qa-q" type="button" aria-expanded="false">
+            <span class="qa-idx">Q1</span>
+            <span class="qa-text">为什么登录页变成了手机号 + 密码？</span>
+            <span class="qa-more">+</span>
+          </button>
+          <div class="qa-a"><div class="qa-a-inner">
+            删除的是<b>第三方账户系统</b>（LastStudio / FE 账户那一套），ETS100 自己的账号体系必须保留，否则云端 API 无法取到 token。
+            第一版改造误把它简化成了跳转页，后续从原始工程恢复为原生表单。
+          </div></div>
+        </div>
+
+        <div class="qa-item">
+          <button class="qa-q" type="button" aria-expanded="false">
+            <span class="qa-idx">Q2</span>
+            <span class="qa-text">不再需要 Shizuku 或 Root 了？</span>
+            <span class="qa-more">+</span>
+          </button>
+          <div class="qa-a"><div class="qa-a-inner">
+            是。三种本地模式都依赖设备权限或在本地解析答案文件，而云端链路本身已经能返回完整答案，
+            多一条本地路径只增加权限申请与失败分支，因此整条删除。
+          </div></div>
+        </div>
+
+        <div class="qa-item">
+          <button class="qa-q" type="button" aria-expanded="false">
+            <span class="qa-idx">Q3</span>
+            <span class="qa-text">覆盖安装会丢数据吗？</span>
+            <span class="qa-more">+</span>
+          </button>
+          <div class="qa-a"><div class="qa-a-inner">
+            不会。新旧包同为 Android Debug 证书、applicationId 相同、versionCode 递增，
+            <code>adb install -r</code> 覆盖安装即可保留设置与登录状态。只有签名不一致时才需要卸载。
+          </div></div>
+        </div>
+
+        <div class="qa-item">
+          <button class="qa-q" type="button" aria-expanded="false">
+            <span class="qa-idx">Q4</span>
+            <span class="qa-text">为什么动画要改成 Animatable？</span>
+            <span class="qa-more">+</span>
+          </button>
+          <div class="qa-a"><div class="qa-a-inner">
+            <code>animateFloatAsState</code> 返回的是普通 Float，在 <code>graphicsLayer</code> 的 lambda 里读它会把整个 Composable 拉进组合阶段，
+            每帧一次重组。换成 <code>Animatable</code> 后读 <code>.value</code> 只触发 draw，跳过组合与布局。
+          </div></div>
+        </div>
+
+        <div class="qa-item">
+          <button class="qa-q" type="button" aria-expanded="false">
+            <span class="qa-idx">Q5</span>
+            <span class="qa-text">这个仓库可以公开分发吗？</span>
+            <span class="qa-more">+</span>
+          </button>
+          <div class="qa-a"><div class="qa-a-inner">
+            原始项目声明闭源并禁止重新打包分发，本仓库是其本地改造版本，仅供个人学习与备份。
+            若要二次分发，需自行取得原始作者授权；页面与仓库不再附带原始营销文案与私域信息。
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div>
+        <p class="foot-title">Fe Cloud · 改版档案</p>
+        <p class="foot-meta">Kotlin / Jetpack Compose · 仅云端读取 · 2026</p>
+      </div>
+      <div class="foot-links">
+        <a href="#cover">回到封面</a>
+        <a href="#ledger">变更台账</a>
+        <a href="#qa">问答</a>
+      </div>
+    </footer>
+
+  </div>
 </main>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <div>
-      <div class="brand-text">Fe Cloud</div>
-      <p class="muted">Kotlin · Jetpack Compose · 云端读取改造版</p>
-    </div>
-    <div class="footer-links">
-      <a href="#features">特性</a>
-      <a href="#arch">架构</a>
-      <a href="#faq">FAQ</a>
-    </div>
-  </div>
-</footer>
-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script src="assets/main.js"></script>
 </body>
 </html>

@@ -1,541 +1,624 @@
 /* ============================================================
-   Fe Cloud · site script
-   theme / scroll progress / typer / counters / tilt / spotlight
-   tabs / architecture / motion replay / copy / version check / faq
+   Fe Cloud — 改版档案
+   交互层：主题 / 目录联动 / 阅读进度 / 计数 / 台账展开 /
+   删除线入场 / 模块树联动 / 时间轨播放与拖拽 / 复制 /
+   版本清单多源校验 / 问答折叠 / 轻提示
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const raf = requestAnimationFrame;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-  /* ---------------- theme ---------------- */
+  /* ---------------- 主题 ---------------- */
 
-  const THEME_KEY = "fe-cloud-theme";
+  const KEY = "fe-cloud-theme";
+  const META = $('meta[name="theme-color"]');
 
-  function initTheme() {
-    let saved = null;
-    try { saved = localStorage.getItem(THEME_KEY); } catch { /* ignore */ }
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    const theme = saved || (prefersLight ? "light" : "dark");
-    applyTheme(theme);
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    const meta = $('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", theme === "light" ? "#f6f8fb" : "#0b0f14");
-    try { localStorage.setItem(THEME_KEY, theme); } catch { /* ignore */ }
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    const dark = t === "dark";
+    $$("#themeLabel").forEach((el) => (el.textContent = dark ? "Light" : "Dark"));
+    $$("#themeToggleMobile").forEach((el) => (el.textContent = dark ? "Light" : "Dark"));
+    if (META) META.setAttribute("content", dark ? "#13100d" : "#f3efe6");
+    try { localStorage.setItem(KEY, t); } catch (e) {}
   }
 
   function toggleTheme() {
-    const cur = document.documentElement.getAttribute("data-theme");
-    applyTheme(cur === "light" ? "dark" : "light");
-    toast(cur === "light" ? "已切换到深色主题" : "已切换到浅色主题");
+    const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    applyTheme(cur === "dark" ? "light" : "dark");
   }
 
-  /* ---------------- toast ---------------- */
+  function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    applyTheme(saved === "dark" ? "dark" : "light");
+    $("#themeToggle")?.addEventListener("click", toggleTheme);
+    $("#themeToggleMobile")?.addEventListener("click", toggleTheme);
+  }
+
+  /* ---------------- 提示 ---------------- */
 
   let toastTimer = 0;
-  function toast(message) {
+  function toast(msg) {
     const el = $("#toast");
     if (!el) return;
-    el.textContent = message;
+    el.textContent = msg;
     el.classList.add("is-show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("is-show"), 1800);
+    toastTimer = setTimeout(() => el.classList.remove("is-show"), 1900);
   }
 
-  /* ---------------- nav ---------------- */
+  /* ---------------- 阅读进度 + 目录联动 ---------------- */
 
-  function initNav() {
-    const nav = $("#nav");
-    const burger = $("#navBurger");
+  function initReading() {
+    const fill = $("#readFill");
+    const pct = $("#readPct");
+    const items = $$(".toc-item");
+    const sections = items
+      .map((a) => {
+        const id = (a.getAttribute("href") || "").replace("#", "");
+        return id ? { a, el: document.getElementById(id) } : null;
+      })
+      .filter(Boolean);
 
     const onScroll = () => {
       const y = window.scrollY || 0;
-      nav.classList.toggle("is-scrolled", y > 8);
       const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const p = Math.min(1, y / max);
-      $("#scrollProgress").style.width = (p * 100).toFixed(2) + "%";
+      const p = clamp(y / max, 0, 1);
+      if (fill) fill.style.width = (p * 100).toFixed(2) + "%";
+      if (pct) pct.textContent = Math.round(p * 100) + "%";
+
+      let current = sections[0];
+      sections.forEach((s) => {
+        if (!s.el) return;
+        if (s.el.getBoundingClientRect().top <= 140) current = s;
+      });
+      items.forEach((a) => a.classList.remove("is-current"));
+      current?.a.classList.add("is-current");
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     onScroll();
-
-    if (burger) {
-      burger.addEventListener("click", () => {
-        const open = nav.classList.toggle("is-open");
-        burger.setAttribute("aria-expanded", String(open));
-      });
-    }
-
-    $$(".nav-links a").forEach((a) =>
-      a.addEventListener("click", () => nav.classList.remove("is-open"))
-    );
   }
 
-  /* ---------------- hero typer ---------------- */
-
-  function initTyper() {
-    const el = $("#typer");
-    if (!el) return;
-    const lines = [
-      "只读云端，不做多余的事",
-      "Shizuku / Root / 直读：已下线",
-      "Animatable + graphicsLayer：零重组动画",
-      "2.3.0.1-fix · versionCode 25",
-    ];
-    let li = 0;
-    let ci = 0;
-    let deleting = false;
-
-    const tick = () => {
-      const text = lines[li];
-      if (!deleting) {
-        ci++;
-        el.textContent = text.slice(0, ci);
-        if (ci >= text.length) {
-          deleting = true;
-          setTimeout(tick, 1500);
-          return;
-        }
-        setTimeout(tick, 55);
-      } else {
-        ci--;
-        el.textContent = text.slice(0, ci);
-        if (ci <= 0) {
-          deleting = false;
-          li = (li + 1) % lines.length;
-          setTimeout(tick, 260);
-          return;
-        }
-        setTimeout(tick, 26);
-      }
-    };
-    tick();
-  }
-
-  /* ---------------- counters ---------------- */
+  /* ---------------- 计数 ---------------- */
 
   function initCounters() {
-    const nums = $$(".stat-num");
+    const nums = $$(".fig-num");
     if (!nums.length) return;
 
-    const animate = (el) => {
+    const run = (el) => {
       const target = Number(el.dataset.count || 0);
-      const dur = 900;
+      if (!target) { el.textContent = "0"; return; }
       const t0 = performance.now();
+      const dur = 780;
       const step = (t) => {
-        const p = Math.min(1, (t - t0) / dur);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = String(Math.round(target * eased));
-        if (p < 1) raf(step);
+        const k = clamp((t - t0) / dur, 0, 1);
+        const e = 1 - Math.pow(1 - k, 3);
+        el.textContent = String(Math.round(target * e));
+        if (k < 1) raf(step);
       };
       raf(step);
     };
 
     const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            animate(e.target);
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.4 }
+      (es) => es.forEach((e) => {
+        if (e.isIntersecting) { run(e.target); io.unobserve(e.target); }
+      }),
+      { threshold: 0.5 }
     );
     nums.forEach((n) => io.observe(n));
   }
 
-  /* ---------------- tilt ---------------- */
+  function initLedger() {
+    $$(".entry").forEach((entry) => {
+      const head = $(".entry-head", entry);
+      const body = $(".entry-body", entry);
+      if (!head || !body) return;
+      const open = () => entry.classList.contains("is-open");
 
-  function initTilt() {
-    const device = $(".device");
-    if (!device) return;
-
-    const hero = $("#hero");
-    if (!hero) return;
-
-    hero.addEventListener("pointermove", (e) => {
-      const rect = hero.getBoundingClientRect();
-      const nx = (e.clientX - rect.left) / rect.width - 0.5;
-      const ny = (e.clientY - rect.top) / rect.height - 0.5;
-      const rx = (-ny * 10).toFixed(2);
-      const ry = (nx * 14).toFixed(2);
-      device.style.transform = `rotateY(${ry}deg) rotateX(${rx}deg)`;
+      head.addEventListener("click", () => {
+        const next = !open();
+        head.setAttribute("aria-expanded", String(next));
+        entry.classList.toggle("is-open", next);
+        if (next) {
+          body.style.height = body.scrollHeight + "px";
+        } else {
+          body.style.height = body.scrollHeight + "px";
+          void body.offsetHeight;
+          body.style.height = "0px";
+        }
+      });
     });
 
-    hero.addEventListener("pointerleave", () => {
-      device.style.transform = "";
-    });
-  }
-
-  /* ---------------- spotlight ---------------- */
-
-  function initSpotlight() {
-    $$("[data-spot]").forEach((card) => {
-      card.addEventListener("pointermove", (e) => {
-        const r = card.getBoundingClientRect();
-        card.style.setProperty("--mx", ((e.clientX - r.left) / r.width) * 100 + "%");
-        card.style.setProperty("--my", ((e.clientY - r.top) / r.height) * 100 + "%");
+    window.addEventListener("resize", () => {
+      $$(".entry").forEach((entry) => {
+        if (!entry.classList.contains("is-open")) return;
+        const body = $(".entry-body", entry);
+        if (body) body.style.height = body.querySelector(".entry-body-inner")?.scrollHeight + 2 + "px";
       });
     });
   }
 
-  /* ---------------- tabs ---------------- */
+  /* ---------------- 删除线入场 ---------------- */
 
-  function initTabs() {
-    const tabs = $$(".tab");
-    const panels = $$(".tab-panel");
-    if (!tabs.length) return;
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const key = tab.dataset.tab;
-        tabs.forEach((t) => {
-          const on = t === tab;
-          t.classList.toggle("is-active", on);
-          t.setAttribute("aria-selected", String(on));
-        });
-        panels.forEach((p) => p.classList.toggle("is-active", p.dataset.panel === key));
-      });
+  function initStrike() {
+    const rows = $$(".cut-row[data-strike]");
+    if (!rows.length) return;
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-hit");
+          io.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.6 }
+    );
+    rows.forEach((r, i) => {
+      r.style.setProperty("--strike-delay", (i * 60) + "ms");
+      io.observe(r);
     });
   }
 
-  /* ---------------- architecture ---------------- */
+  /* ---------------- 模块树 ---------------- */
 
-  const ARCH = {
+  const MODULES = {
     app: {
-      title: "app",
-      desc: "应用入口与主题层。承载 MainActivity、FeAppMain、FeNavContainer、Changyan 登录 Activity、Hilt 容器与主题管理。",
-      items: [
-        "FeAppMain：引导/主界面切换与主界面 alpha 淡入",
-        "FeNavContainer：NavDisplay + 预测性返回动画",
-        "ChangyanWebLoginActivity：畅言网页登录备用入口",
-        "AppModule / AppContainer：Hilt Provider 装配",
+      t: "app",
+      d: "应用入口与主题层。承载引导与主界面的切换、导航容器、畅言登录 Activity、Hilt 装配。",
+      l: [
+        "FeAppMain · 引导 / 主界面切换，主界面 alpha 淡入",
+        "FeNavContainer · NavDisplay + 预测性返回动画",
+        "ChangyanWebLoginActivity · 网页登录备用入口",
+        "AppModule / AppContainer · Hilt Provider",
       ],
     },
     core: {
-      title: "core/*",
-      desc: "common / model / designsystem / settings / platform / navigation 六个基础模块，提供模型、设计系统、设置存储、平台能力与导航基建。",
-      items: [
-        "core:model：ActivationMode 等枚举",
-        "core:designsystem：ExpressiveScaffold、TonalCard、LargeFlexibleTopAppBar",
-        "core:settings：SettingsManager / ThemeManager",
-        "core:navigation：PredictiveBackAnimationHandler 实现族",
+      t: "core/*",
+      d: "六个基础模块，提供模型、设计系统、设置存储、平台能力与导航基建。",
+      l: [
+        "core:model · ActivationMode 等枚举",
+        "core:designsystem · ExpressiveScaffold、TonalCard",
+        "core:settings · SettingsManager / ThemeManager",
+        "core:navigation · PredictiveBackAnimationHandler",
       ],
     },
     data: {
-      title: "data/*",
-      desc: "content 与 ets100 两个数据模块。content 负责远程配置、公告、更新状态与协议；ets100 负责账号、云端 API 与试卷模型。",
-      items: [
-        "data:content：RemoteConfigManager、AppUpdateStatusRepository、LegalAgreementRepository",
-        "data:ets100：ETS100ApiClient、ETS100AuthManager、ResolverAuthorizer",
-        "已移除 data:account",
+      t: "data/*",
+      d: "数据层，仅两个子模块：content 负责远端配置与协议，ets100 负责账号与云端 API。",
+      l: [
+        "data:content · RemoteConfigManager、AppUpdateStatusRepository",
+        "data:ets100 · ETS100ApiClient、ETS100AuthManager",
+        "data:account 已整体移除",
       ],
     },
-    feature: {
-      title: "feature/*",
-      desc: "activation / onboarding / home / read / settings / shared 六个界面模块。",
-      items: [
-        "feature:activation：云端激活页、CloudActivationScreen",
-        "feature:onboarding：三步引导与 stagger 入场",
-        "feature:read：四态内容与列表 StaggerEntrance",
-        "已移除 feature:account",
+    content: {
+      t: "data:content",
+      d: "远端配置、公告、协议与更新状态的读取层，失败时回退到内置默认值。",
+      l: [
+        "RemoteConfigManager · 配置拉取与校验码比对",
+        "LegalAgreementRepository · 用户协议与隐私政策",
+        "AppUpdateStatusRepository · 版本状态",
       ],
     },
     ets100: {
-      title: "data:ets100",
-      desc: "云端链路核心。包含登录、设备绑定、作业列表、下载、模板合并与答案解析所需的全部数据层能力。",
-      items: [
-        "ETS100AuthManager：手机号/密码登录、token、deviceCode",
-        "ETS100ApiClient：作业接口与异常类型",
-        "CloudMerge / CloudTemplate：试卷模板合并",
-        "PaperSource(Cloud)：云端试卷来源模型",
+      t: "data:ets100",
+      d: "云端链路核心：登录、设备绑定、作业列表、下载、模板合并与答案解析的数据层能力。",
+      l: [
+        "ETS100AuthManager · 手机号 / 密码、token、deviceCode",
+        "ETS100ApiClient · 作业接口与异常类型",
+        "CloudMerge / CloudTemplate · 试卷模板合并",
       ],
     },
-    read: {
-      title: "feature:read",
-      desc: "阅读页。已重写为纯云端委托，本地加载链整体移除。",
-      items: [
-        "ReadViewModel：仅注入 ApplicationContext",
-        "ReadScreen：gate / loading / error / list 四态",
-        "ReadCloudContent：Crossfade 列表与详情",
-        "StaggerEntrance：按 index 阶梯入场",
-      ],
+    "removed-account": {
+      t: "data:account（已移除）",
+      d: "第三方账户体系的本地数据层，随账户入口一并删除，不再参与构建。",
+      l: ["账户登录与绑定", "云端授权与头像", "验证码入口"],
     },
-    onboarding: {
-      title: "feature:onboarding",
-      desc: "三步引导：欢迎 → 运行模式（仅云端）→ 完成。全部使用 draw-phase 动画。",
-      items: [
-        "WelcomeStep：spring 缩放 + 阶梯淡入",
-        "ModeAndPermissionStep：三段 stagger",
-        "FinishStep：图标弹性 + 摘要卡上滑",
-        "OnboardingStepIndicator：连续进度条插值",
+    feature: {
+      t: "feature/*",
+      d: "界面层，六个模块：激活、引导、首页、阅读、设置、共享组件。",
+      l: [
+        "activation · 云端激活与设备验证",
+        "onboarding · 三步引导与阶梯入场",
+        "read · 四态阅读与列表入场",
       ],
     },
     activation: {
-      title: "feature:activation",
-      desc: "运行授权。三种本地模式面板已删除，仅保留云端登录与授权状态。",
-      items: [
-        "ActivationViewModel：仅维护云端登录状态",
-        "CloudActivationScreen：手机号 + 密码表单",
-        "DeviceVerificationDialog：设备绑定短信验证",
-        "已删除 Shizuku / Root / DirectRead 面板",
+      t: "feature:activation",
+      d: "运行授权。三种本地模式面板已删除，只保留云端登录与授权状态。",
+      l: [
+        "ActivationViewModel · 仅维护云端登录状态",
+        "CloudActivationScreen · 手机号 + 密码表单",
+        "DeviceVerificationDialog · 设备绑定短信验证",
       ],
+    },
+    onboarding: {
+      t: "feature:onboarding",
+      d: "三步引导：欢迎 → 运行模式（仅云端）→ 完成。全部 draw-phase 动画。",
+      l: [
+        "WelcomeStep · spring 缩放 + 阶梯淡入",
+        "ModeAndPermissionStep · 三段 stagger",
+        "OnboardingStepIndicator · 连续进度插值",
+      ],
+    },
+    home: {
+      t: "feature:home",
+      d: "首页与作业列表。本地模式状态条已移除，只展示云端作业。",
+      l: [
+        "HomeViewModel · 仅云端数据源",
+        "HomeScreen · 作业卡片与刷新",
+      ],
+    },
+    read: {
+      t: "feature:read",
+      d: "阅读页。已重写为纯云端委托，本地加载链整体移除。",
+      l: [
+        "ReadViewModel · 仅注入 ApplicationContext",
+        "ReadScreen · gate / loading / error / list 四态",
+        "StaggerEntrance · 按 index 阶梯入场",
+      ],
+    },
+    settings: {
+      t: "feature:settings",
+      d: "设置与关于。账户区块删除，保留主题、缓存、协议与版本信息。",
+      l: ["SettingsScreen · 主题与缓存", "AboutScreen · 版本与来源说明"],
+    },
+    shared: {
+      t: "feature:shared",
+      d: "跨模块共享的 UI 组件与工具。",
+      l: ["通用卡片、空态、加载指示", "格式化与扩展函数"],
+    },
+    "removed-account-ui": {
+      t: "feature:account（已移除）",
+      d: "账户界面层，包含登录、个人中心、绑定与头像，整模块删除。",
+      l: ["账户登录页", "个人中心", "绑定与头像"],
+    },
+    baseline: {
+      t: "baselineprofile",
+      d: "启动路径的 Baseline Profile 模块，用于优化首帧与滚动性能。",
+      l: ["启动与滚动关键路径采样", "随 release 构建生成 profile"],
+    },
+    docs: {
+      t: "docs",
+      d: "本页所在目录。纯静态站点，由 Pages 工作流在 main 分支变更时发布。",
+      l: ["index.html · 本档案", "assets/ · 样式与交互", "version.json · 站点侧清单副本"],
+    },
+    scripts: {
+      t: "scripts",
+      d: "仓库脚本：构建校验与模块边界检查，保留不依赖外部服务的部分。",
+      l: ["architecture/check_module_boundaries.py", "release/read_version.py", "release/check_release_ready.py"],
     },
   };
 
-  function initArch() {
-    const detail = $("#archDetail");
-    if (!detail) return;
-    const nodes = $$("[data-node]");
+  function initTree() {
+    const title = $("#treeReadTitle");
+    const desc = $("#treeReadDesc");
+    const list = $("#treeReadList");
+    if (!title || !desc || !list) return;
 
     const render = (key) => {
-      const info = ARCH[key];
-      if (!info) return;
-      detail.innerHTML = `
-        <h3>${info.title}</h3>
-        <p>${info.desc}</p>
-        <ul>${info.items.map((i) => `<li>${i}</li>`).join("")}</ul>
-      `;
-      nodes.forEach((n) => n.classList.toggle("is-active", n.dataset.node === key));
+      const m = MODULES[key];
+      if (!m) return;
+      title.textContent = m.t;
+      desc.textContent = m.d;
+      list.innerHTML = m.l.map((x) => `<li>${x}</li>`).join("");
+      $$(".tree-line[data-mod]").forEach((l) =>
+        l.classList.toggle("is-active", l.dataset.mod === key)
+      );
     };
 
-    nodes.forEach((n) => {
-      n.addEventListener("click", () => {
-        if (n.disabled) return;
-        render(n.dataset.node);
+    $$(".tree-line[data-mod]").forEach((line) => {
+      line.setAttribute("tabindex", "0");
+      line.setAttribute("role", "button");
+      line.addEventListener("click", () => render(line.dataset.mod));
+      line.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          render(line.dataset.mod);
+        }
       });
     });
 
     render("app");
   }
 
-  /* ---------------- motion replay ---------------- */
+  /* ---------------- 时间轨 ---------------- */
 
-  let motionSpeed = 1;
-  let motionTimers = [];
+  const TOTAL = 1000;
 
-  function resetMotion() {
-    motionTimers.forEach((t) => clearTimeout(t));
-    motionTimers = [];
-    $$(".m-node").forEach((n) => {
-      n.classList.remove("is-in");
-      n.style.animationDelay = "0ms";
-      void n.offsetWidth;
+  function initTimeline() {
+    const rows = $$("#tracks .track-row");
+    if (!rows.length) return;
+
+    const scrub = $("#scrub");
+    const clock = $("#clock");
+    const playBtn = $("#playBtn");
+
+    // 轨道条与播放头按比例定位
+    rows.forEach((row) => {
+      const delay = Number(row.dataset.delay || 0);
+      const dur = Number(row.dataset.dur || 0);
+      const bar = $(".track-bar", row);
+      const head = $(".playhead", row);
+      if (bar) {
+        bar.style.left = (delay / TOTAL) * 100 + "%";
+        bar.style.width = Math.max(0.6, (dur / TOTAL) * 100) + "%";
+      }
     });
-  }
 
-  function playMotion() {
-    resetMotion();
-    const stage = $("#motionStage");
-    if (!stage) return;
-    const rows = $$(".m-row", stage);
-    rows.forEach((r, i) => r.setAttribute("data-row", String(i)));
+    let t = 0;
+    let speed = 1;
+    let rafId = 0;
+    let playing = false;
+    let last = 0;
 
-    const targets = [
-      { el: $(".m-logo", stage), delay: 0 },
-      { el: $(".m-title", stage), delay: 160 },
-      { el: rows[0], delay: 340 },
-      { el: rows[1], delay: 400 },
-      { el: rows[2], delay: 460 },
-      { el: $(".m-cta", stage), delay: 560 },
-    ];
+    const paint = (value) => {
+      t = clamp(value, 0, TOTAL);
+      rows.forEach((row) => {
+        const delay = Number(row.dataset.delay || 0);
+        const dur = Number(row.dataset.dur || 0);
+        const head = $(".playhead", row);
+        if (head) {
+          head.style.left = (t / TOTAL) * 100 + "%";
+          head.style.opacity = "1";
+        }
+        const live = t >= delay && t <= delay + dur;
+        row.classList.toggle("is-live", live);
+      });
+      if (scrub) scrub.value = String(Math.round(t));
+      if (clock) clock.textContent = String(Math.round(t)).padStart(4, "0");
+    };
 
-    targets.forEach(({ el, delay }) => {
-      if (!el) return;
-      const scaled = Math.round(delay / motionSpeed);
-      const timer = setTimeout(() => el.classList.add("is-in"), scaled);
-      motionTimers.push(timer);
-    });
-  }
+    const stop = () => {
+      playing = false;
+      cancelAnimationFrame(rafId);
+      if (playBtn) playBtn.textContent = "▶ 播放";
+    };
 
-  function initMotion() {
-    const replay = $("#motionReplay");
-    const stage = $("#motionStage");
-    if (!replay || !stage) return;
+    const loop = (now) => {
+      if (!playing) return;
+      if (!last) last = now;
+      const dt = Math.min(80, now - last);
+      last = now;
+      t += dt * speed;
+      if (t >= TOTAL) {
+        paint(TOTAL);
+        stop();
+        return;
+      }
+      paint(t);
+      rafId = raf(loop);
+    };
 
-    replay.addEventListener("click", playMotion);
+    const play = () => {
+      if (playing) { stop(); return; }
+      if (t >= TOTAL) t = 0;
+      playing = true;
+      last = 0;
+      if (playBtn) playBtn.textContent = "‖ 暂停";
+      rafId = raf(loop);
+    };
 
-    $$("#speedGroup .speed-btn").forEach((btn) => {
+    playBtn?.addEventListener("click", play);
+
+    $$("[data-speed]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        $$("#speedGroup .speed-btn").forEach((b) => b.classList.remove("is-active"));
-        btn.classList.add("is-active");
-        motionSpeed = Number(btn.dataset.speed) || 1;
-        playMotion();
+        speed = Number(btn.dataset.speed) || 1;
+        $$("[data-speed]").forEach((b) => b.classList.toggle("is-on", b === btn));
+        if (playing) { t = Math.min(t, TOTAL); }
       });
     });
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
+    scrub?.addEventListener("input", () => {
+      stop();
+      paint(Number(scrub.value));
+    });
+
+    paint(0);
+
+    // 首次进入视口时自动播放一次
+    const tracks = $("#tracks");
+    if (tracks) {
+      const io = new IntersectionObserver(
+        (es) => es.forEach((e) => {
           if (e.isIntersecting) {
-            playMotion();
             io.unobserve(e.target);
+            setTimeout(play, 260);
           }
-        });
-      },
-      { threshold: 0.35 }
-    );
-    io.observe(stage);
+        }),
+        { threshold: 0.45 }
+      );
+      io.observe(tracks);
+    }
   }
 
-  /* ---------------- copy ---------------- */
+  /* ---------------- 复制 ---------------- */
 
   function initCopy() {
-    $$(".copy-btn").forEach((btn) => {
+    $$(".copy").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const target = btn.dataset.copy;
-        const el = target ? $(target) : null;
+        const id = btn.dataset.copy;
+        const el = id ? document.getElementById(id) : null;
         if (!el) return;
-        const text = el.textContent || "";
+        const text = (el.textContent || "").replace(/\u00a0/g, " ").trim();
         try {
-          await navigator.clipboard.writeText(text.trim());
-          toast("已复制到剪贴板");
-        } catch {
+          await navigator.clipboard.writeText(text);
+          toast("已复制");
+        } catch (e) {
           const ta = document.createElement("textarea");
-          ta.value = text.trim();
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
-          try {
-            document.execCommand("copy");
-            toast("已复制到剪贴板");
-          } catch {
-            toast("复制失败，请手动选择");
-          }
+          try { document.execCommand("copy"); toast("已复制"); }
+          catch (err) { toast("复制失败"); }
           document.body.removeChild(ta);
         }
       });
     });
   }
 
-  /* ---------------- version check ---------------- */
-
-  const MIRRORS = [
-    "", // 同源直连
-    "https://ghproxy.net/https://raw.githubusercontent.com/",
-    "https://gh-proxy.com/https://raw.githubusercontent.com/",
-  ];
+  /* ---------------- 版本清单 ---------------- */
 
   const REPO = "zhaohairuiour/ets100-cloud";
   const BRANCH = "main";
 
-  function highlightJson(obj) {
-    const raw = JSON.stringify(obj, null, 2);
-    return raw
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/"/g, "&quot;")
-      .replace(/(&quot;[^&]*?&quot;)(\s*:)/g, '<span class="k">$1</span>$2')
-      .replace(/(: )(&quot;[^&]*?&quot;)/g, '$1<span class="s">$2</span>')
-      .replace(/(: )(\d+)/g, '$1<span class="n">$2</span>');
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function colorJson(raw) {
+    return esc(raw)
+      .replace(/(&quot;|")([^"\\]*(?:\\.[^"\\]*)*)(&quot;|")(\s*:)/g,
+        (_m, q1, k, q2, colon) => `<span class="k">"${k}"</span>${colon}`)
+      .replace(/:(\s*)(&quot;|")([^"\\]*(?:\\.[^"\\]*)*)(&quot;|")/g,
+        (_m, sp, q1, v, q2) => `:${sp}<span class="s">"${v}"</span>`)
+      .replace(/:(\s*)(-?\d+(\.\d+)?)/g, (_m, sp, n) => `:${sp}<span class="n">${n}</span>`)
+      .replace(/:(\s*)(true|false|null)/g, (_m, sp, v) => `:${sp}<span class="n">${v}</span>`);
   }
 
-  async function fetchVersion() {
-    const out = $("#versionOut");
-    if (!out) return;
-    out.hidden = false;
-    out.textContent = "请求中…";
+  function initRelease() {
+    const out = $("#consoleOut");
+    const btn = $("#probeBtn");
+    const force = $("#probeForce");
+    if (!out || !btn) return;
 
-    const t0 = performance.now();
-    const sources = [
-      "version.json",
-      `${MIRRORS[1]}${REPO}/${BRANCH}/version.json`,
-      `${MIRRORS[2]}${REPO}/${BRANCH}/version.json`,
-      `https://raw.githubusercontent.com/${REPO}/${BRANCH}/version.json`,
-    ];
+    const sources = (cacheBust) => {
+      const q = cacheBust ? "?t=" + Date.now() : "";
+      return [
+        { label: "本站 version.json", url: "version.json" + q, same: true },
+        { label: "ghproxy.net", url: `https://ghproxy.net/https://raw.githubusercontent.com/${REPO}/${BRANCH}/version.json` },
+        { label: "gh-proxy.com", url: `https://gh-proxy.com/https://raw.githubusercontent.com/${REPO}/${BRANCH}/version.json` },
+        { label: "raw.githubusercontent", url: `https://raw.githubusercontent.com/${REPO}/${BRANCH}/version.json` },
+      ];
+    };
 
-    for (const src of sources) {
-      try {
-        const res = await fetch(src, { cache: "no-store" });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const ms = Math.round(performance.now() - t0);
-        const local = Number(
-          ($("#versionCode") && $("#versionCode").textContent) || 0
-        );
-        const remote = Number(data.versionCode || 0);
-        const label = src.startsWith("http")
-          ? new URL(src).host
-          : "本站 version.json";
-        out.innerHTML =
-          `<div>来源：${label} · 耗时 ${ms}ms</div>` +
-          `<div>远端 versionCode=${remote}，本地 versionCode=${local} → ` +
-          (remote > local ? "有新版本" : "已是最新") +
-          `</div><hr style="border:0;border-top:1px solid var(--line);margin:10px 0" />` +
-          highlightJson(data);
-        toast("版本清单拉取成功");
-        return;
-      } catch {
-        /* 继续下一个源 */
-      }
-    }
+    let busy = false;
 
-    out.textContent = "全部来源不可达（同源 / ghproxy.net / gh-proxy.com / raw）";
-    toast("版本清单拉取失败");
-  }
+    const probe = async (cacheBust) => {
+      if (busy) return;
+      busy = true;
+      out.hidden = false;
+      out.textContent = "请求中…";
 
-  /* ---------------- reveal ---------------- */
+      const local = Number($("#verCode")?.textContent || 0);
+      const t0 = performance.now();
+      const log = [];
 
-  function initReveal() {
-    const targets = $$(".card, .section-head, .build-card, .list-row, details");
-    if (!targets.length) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("is-in");
-            io.unobserve(e.target);
+      for (const src of sources(cacheBust)) {
+        try {
+          const res = await fetch(src.url, { cache: "no-store" });
+          if (!res.ok) {
+            log.push(`✗ ${src.label} · HTTP ${res.status}`);
+            continue;
           }
-        });
-      },
-      { threshold: 0.12 }
-    );
-    targets.forEach((t) => {
-      t.classList.add("reveal");
-      io.observe(t);
+          const data = await res.json();
+          const ms = Math.round(performance.now() - t0);
+          const remote = Number(data.versionCode || 0);
+          const verdict = remote > local ? "有新版本" : remote === local ? "已是最新" : "本地更新";
+          out.innerHTML =
+            `<div>✓ ${src.label} · ${ms}ms · <span class="k">${verdict}</span>（远端 ${remote} / 本地 ${local}）</div>` +
+            `<div style="height:1px;background:var(--rule);margin:10px 0"></div>` +
+            `<div>${colorJson(JSON.stringify(data, null, 2))}</div>`;
+
+          if (data.versionName) $("#tblName") && ($("#tblName").textContent = data.versionName);
+          if (data.versionCode != null) $("#tblCode") && ($("#tblCode").textContent = String(data.versionCode));
+
+          toast("清单已拉到");
+          busy = false;
+          return;
+        } catch (e) {
+          log.push(`✗ ${src.label} · 不可达`);
+        }
+      }
+
+      out.innerHTML = `<div>四个来源均失败：</div><div>${log.join("\n")}</div>`;
+      toast("拉取失败");
+      busy = false;
+    };
+
+    btn.addEventListener("click", () => probe(false));
+    force?.addEventListener("click", () => probe(true));
+  }
+
+  /* ---------------- 问答 ---------------- */
+
+  function initQa() {
+    $$(".qa-item").forEach((item) => {
+      const q = $(".qa-q", item);
+      const a = $(".qa-a", item);
+      if (!q || !a) return;
+      q.addEventListener("click", () => {
+        const next = !item.classList.contains("is-open");
+        item.classList.toggle("is-open", next);
+        q.setAttribute("aria-expanded", String(next));
+        if (next) a.style.height = a.scrollHeight + "px";
+        else {
+          a.style.height = a.scrollHeight + "px";
+          void a.offsetHeight;
+          a.style.height = "0px";
+        }
+      });
     });
   }
 
-  /* ---------------- boot ---------------- */
+  /* ---------------- 首屏版本 ---------------- */
+
+  function initVersionPill() {
+    fetch("version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const name = d.versionName ? "v" + String(d.versionName).replace(/^v/, "") : null;
+        ["#verName", "#verName2"].forEach((s) => {
+          const el = $(s);
+          if (el && name) el.textContent = name;
+        });
+        if (d.versionCode != null) {
+          const el = $("#verCode");
+          if (el) el.textContent = String(d.versionCode);
+        }
+      })
+      .catch(() => {});
+  }
+
+  /* ---------------- 入场 ---------------- */
+
+  function initReveal() {
+    const targets = $$(".section-head, .figures, .entry, .cut-col, .tree, .tree-read, .ver-table, .qa-item");
+    if (!targets.length) return;
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.08 }
+    );
+    targets.forEach((tg) => { tg.classList.add("reveal"); io.observe(tg); });
+  }
+
+  /* ---------------- 启动 ---------------- */
 
   function boot() {
     initTheme();
-    initNav();
-    initTyper();
+    initReading();
     initCounters();
-    initTilt();
-    initSpotlight();
-    initTabs();
-    initArch();
-    initMotion();
+    initLedger();
+    initStrike();
+    initTree();
+    initTimeline();
     initCopy();
+    initRelease();
+    initQa();
+    initVersionPill();
     initReveal();
-
-    const themeBtn = $("#themeToggle");
-    if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
-
-    const check = $("#checkVersion");
-    if (check) check.addEventListener("click", fetchVersion);
-
-    // 首屏版本 pill
-    const vt = $("#versionText");
-    const vc = $("#versionCode");
-    if (vt || vc) {
-      fetch("version.json", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (!d) return;
-          if (vt && d.versionName) vt.textContent = "v" + d.versionName;
-          if (vc && d.versionCode != null) vc.textContent = String(d.versionCode);
-        })
-        .catch(() => {});
-    }
   }
 
   if (document.readyState === "loading") {

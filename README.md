@@ -68,7 +68,11 @@ python3 -m http.server 8899 --directory docs
 
 仓库名为 `ets100-cloud` 时，Pages 地址为 `https://zhaohairuiour.github.io/ets100-cloud/`。首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 **GitHub Actions**。
 
-站点结构：主题切换（深/浅，localStorage 记忆）、滚动进度、打字机副标题、滚动计数、卡片 spotlight、改造对比 Tab、架构节点联动、动画节奏可视化（1×/2×/4× 重播）、命令复制、`version.json` 多源回退校验、FAQ 折叠，并带 `404.html`、`manifest.webmanifest` 与 192/512 图标。
+设计语言是**印刷出版物 / 技术白皮书**，而非落地页模板：纸感底（浅色 `#f3efe6`、深色 `#13100d`）、衬线大标题、编号章节、hairline 分隔线、边注，无渐变发光与卡片网格。
+
+页面八节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）。
+
+左侧常驻目录随滚动高亮，底部显示阅读百分比；窄屏（≤860px）收起侧栏，改为吸顶栏 + 主题切换。文件：`index.html`、`assets/style.css`、`assets/main.js`、`404.html`、`manifest.webmanifest`、`version.json` 与 192/512 图标。
 
 ## 版本清单
 
