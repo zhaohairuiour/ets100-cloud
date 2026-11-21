@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,21 +9,74 @@
 <link rel="stylesheet" href="assets/style.css" />
 <style>
   body { display: grid; place-items: center; min-height: 100vh; padding: 40px 24px; }
-  .blank { max-width: 560px; width: 100%; }
-  .blank .blank-no {
-    font-family: var(--serif);
-    font-size: clamp(90px, 16vw, 150px);
-    line-height: 0.9;
-    letter-spacing: -0.05em;
-    margin: 0;
-    color: var(--ink);
+  .blank {
+    position: relative;
+    max-width: 560px;
+    width: 100%;
+    padding: 34px 32px 30px;
+    border-radius: var(--r-xl);
+    border: 1px solid var(--edge);
+    background: var(--glass);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--lift), 0 0 0 1px rgba(79, 215, 255, 0.06);
+    overflow: hidden;
   }
-  .blank-no span { color: var(--accent); }
-  .blank-rule { height: 1px; background: var(--ink); margin: 26px 0 20px; }
-  .blank h1 { font-family: var(--serif); font-size: 21px; font-weight: 600; margin: 0 0 10px; }
-  .blank p:not(.blank-no) { margin: 0 0 24px; color: var(--ink-2); font-size: 14px; }
-  .blank-links { display: flex; gap: 18px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; }
-  .kicker { margin-bottom: 20px; }
+  .blank::before {
+    content: "";
+    position: absolute;
+    left: -20%; top: -60%;
+    width: 90%; height: 130%;
+    background: radial-gradient(closest-side, rgba(79, 215, 255, 0.18), transparent);
+    pointer-events: none;
+  }
+  .blank > * { position: relative; }
+  .kicker { margin: 0 0 18px; }
+  .blank .blank-no {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(84px, 15vw, 132px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+    background: linear-gradient(150deg, var(--ink) 32%, var(--accent) 118%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .blank-no span {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .blank-rule {
+    height: 1px;
+    margin: 22px 0 20px;
+    background: linear-gradient(90deg, rgba(79, 215, 255, 0.5), rgba(139, 123, 255, 0.25), transparent);
+  }
+  .blank h1 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .blank p:not(.blank-no) {
+    margin: 0 0 22px;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--ink-2);
+  }
+  .blank-links { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; }
+  .blank-links a {
+    padding: 7px 14px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--edge);
+    background: var(--surface-2);
+    color: var(--ink-2);
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+  .blank-links a:hover { color: var(--accent); border-color: rgba(79, 215, 255, 0.36); }
 </style>
 </head>
 <body>

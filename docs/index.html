@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Fe Cloud — ETS100 云端阅读器改版档案</title>
 <meta name="description" content="ETS100（e听说）答案阅读器的改版档案：移除第三方账户系统与 Shizuku / Root / 漏洞直读三种本地模式，仅保留云端链路，Compose 动画全链路改为 draw-phase 实现。" />
-<meta name="theme-color" content="#f3efe6" />
+<meta name="theme-color" content="#070a12" />
 <link rel="icon" href="assets/icon-192.png" type="image/png" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
 <link rel="manifest" href="manifest.webmanifest" />
@@ -17,8 +17,8 @@
   /* 首屏前定主题，避免闪烁 */
   (function () {
     try {
-      var t = localStorage.getItem("fe-cloud-theme");
-      if (!t) t = "light";
+      var t = localStorage.getItem("fe-cloud-theme-v2");
+      if (!t) t = "dark";
       document.documentElement.setAttribute("data-theme", t);
     } catch (e) {}
   })();
@@ -522,7 +522,7 @@
           <tr><td>versionCode</td><td id="tblCode">25</td><td>version.json</td></tr>
           <tr><td>minSdk</td><td>26</td><td>build.gradle.kts</td></tr>
           <tr><td>targetSdk</td><td>37</td><td>build.gradle.kts</td></tr>
-          <tr><td>apkUrl</td><td>待发布 Release 后填入</td><td>version.json</td></tr>
+          <tr><td>apkUrl</td><td id="tblApk">Release · v2.3.0.1-fix</td><td>version.json</td></tr>
         </tbody>
       </table>
 

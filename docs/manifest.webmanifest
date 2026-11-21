@@ -3,8 +3,8 @@
   "short_name": "Fe Cloud",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f3efe6",
-  "theme_color": "#f3efe6",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
   "lang": "zh-CN",
   "description": "ETS100 云端阅读器改版档案：移除账户系统与本地读取模式，动画改为 draw-phase。",
   "icons": [

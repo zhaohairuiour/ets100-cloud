@@ -15,7 +15,7 @@
 
   /* ---------------- 主题 ---------------- */
 
-  const KEY = "fe-cloud-theme";
+  const KEY = "fe-cloud-theme-v2";
   const META = $('meta[name="theme-color"]');
 
   function applyTheme(t) {
@@ -23,7 +23,7 @@
     const dark = t === "dark";
     $$("#themeLabel").forEach((el) => (el.textContent = dark ? "Light" : "Dark"));
     $$("#themeToggleMobile").forEach((el) => (el.textContent = dark ? "Light" : "Dark"));
-    if (META) META.setAttribute("content", dark ? "#13100d" : "#f3efe6");
+    if (META) META.setAttribute("content", dark ? "#070a12" : "#eef2fb");
     try { localStorage.setItem(KEY, t); } catch (e) {}
   }
 
@@ -35,7 +35,7 @@
   function initTheme() {
     let saved = null;
     try { saved = localStorage.getItem(KEY); } catch (e) {}
-    applyTheme(saved === "dark" ? "dark" : "light");
+    applyTheme(saved === "light" ? "light" : "dark");
     $("#themeToggle")?.addEventListener("click", toggleTheme);
     $("#themeToggleMobile")?.addEventListener("click", toggleTheme);
   }
@@ -526,6 +526,10 @@
             `<div style="height:1px;background:var(--rule);margin:10px 0"></div>` +
             `<div>${colorJson(JSON.stringify(data, null, 2))}</div>`;
 
+          if (data.apkUrl) {
+            const apk = $("#tblApk");
+            if (apk) apk.innerHTML = `<a href="${esc(data.apkUrl)}" target="_blank" rel="noopener">ets100-cloud-${String(data.versionName || "latest").replace(/^v/, "")}.apk</a>`;
+          }
           if (data.versionName) $("#tblName") && ($("#tblName").textContent = data.versionName);
           if (data.versionCode != null) $("#tblCode") && ($("#tblCode").textContent = String(data.versionCode));
 
@@ -582,6 +586,10 @@
         if (d.versionCode != null) {
           const el = $("#verCode");
           if (el) el.textContent = String(d.versionCode);
+        }
+        if (d.apkUrl) {
+          const apk = $("#tblApk");
+          if (apk) apk.innerHTML = `<a href="${String(d.apkUrl).replace(/&/g, "&amp;")}" target="_blank" rel="noopener">ets100-cloud-${String(d.versionName || "latest").replace(/^v/, "")}.apk</a>`;
         }
       })
       .catch(() => {});
