@@ -9,9 +9,9 @@
 | 介绍站 | https://zhaohairuiour.github.io/ets100-cloud/ |
 | 仓库 | https://github.com/zhaohairuiour/ets100-cloud |
 | applicationId | `com.shuaiqiu.fuckets100` |
-| versionName | `2.3.0.2-fix` |
-| versionCode | `26` |
-| APK | [ets100-cloud-2.3.0.2-fix.apk](https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.2-fix/ets100-cloud-2.3.0.2-fix.apk) |
+| versionName | `2.3.0.3-fix` |
+| versionCode | `27` |
+| APK | [ets100-cloud-2.3.0.3-fix.apk](https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.3-fix/ets100-cloud-2.3.0.3-fix.apk) |
 | minSdk / targetSdk | 26 / 37 |
 | 签名 | Android Debug（SHA-256 `79186029…d9c5`） |
 

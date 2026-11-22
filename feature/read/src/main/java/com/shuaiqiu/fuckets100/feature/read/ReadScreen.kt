@@ -311,7 +311,12 @@ fun ReadScreen(
 
                 // 4. 云端模式：作业列表或答案详情
                 else -> {
-                    if (homeworkList.isNotEmpty() || papers.isNotEmpty()) {
+                    // 只要已读取过当前分类或账号在线，就保留列表框架：
+                    // 空结果交给 EmptyCloudHomeworkCard，顶部分类选择器不随结果消失。
+                    if (
+                        homeworkList.isNotEmpty() || papers.isNotEmpty() ||
+                        isCurrentCategoryLoaded || accountOnline
+                    ) {
                         ReadCloudContent(
                             showPaperDetail = showPaperDetail,
                             selectedPaper = selectedPaper,

@@ -1,10 +1,10 @@
 {
-  "versionName": "2.3.0.2-fix",
-  "versionCode": 26,
+  "versionName": "2.3.0.3-fix",
+  "versionCode": 27,
   "applicationId": "com.shuaiqiu.fuckets100",
   "minSdk": 26,
   "targetSdk": 37,
-  "apkUrl": "https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.2-fix/ets100-cloud-2.3.0.2-fix.apk",
+  "apkUrl": "https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.3-fix/ets100-cloud-2.3.0.3-fix.apk",
   "publishedAt": "2026-11-22",
-  "notes": "新增免责声明：明确非官方改版身份与责任边界；保留云端登录、云端解析与 draw-phase 动画。"
+  "notes": "修复读取答案的空结果状态：某分类未检出题目时，顶部分类选择器仍常驻，可直接切换“当前作业 / 历史作业 / 词汇PK”继续查找；其余内容与 2.3.0.2-fix 一致。"
 }
