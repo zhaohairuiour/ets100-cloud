@@ -1,10 +1,10 @@
 {
-  "versionName": "2.3.0.1-fix",
-  "versionCode": 25,
+  "versionName": "2.3.0.2-fix",
+  "versionCode": 26,
   "applicationId": "com.shuaiqiu.fuckets100",
   "minSdk": 26,
   "targetSdk": 37,
-  "apkUrl": "https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.1-fix/ets100-cloud-2.3.0.1-fix.apk",
-  "publishedAt": "2026-11-21",
-  "notes": "云端读取改造版：移除第三方账户系统与三种本地读取模式，补齐引导与列表入场动画。"
+  "apkUrl": "https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.2-fix/ets100-cloud-2.3.0.2-fix.apk",
+  "publishedAt": "2026-11-22",
+  "notes": "新增免责声明：明确非官方改版身份与责任边界；保留云端登录、云端解析与 draw-phase 动画。"
 }

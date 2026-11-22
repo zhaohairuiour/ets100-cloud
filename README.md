@@ -9,9 +9,9 @@
 | 介绍站 | https://zhaohairuiour.github.io/ets100-cloud/ |
 | 仓库 | https://github.com/zhaohairuiour/ets100-cloud |
 | applicationId | `com.shuaiqiu.fuckets100` |
-| versionName | `2.3.0.1-fix` |
-| versionCode | `25` |
-| APK | [ets100-cloud-2.3.0.1-fix.apk](https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.1-fix/ets100-cloud-2.3.0.1-fix.apk) |
+| versionName | `2.3.0.2-fix` |
+| versionCode | `26` |
+| APK | [ets100-cloud-2.3.0.2-fix.apk](https://github.com/zhaohairuiour/ets100-cloud/releases/download/v2.3.0.2-fix/ets100-cloud-2.3.0.2-fix.apk) |
 | minSdk / targetSdk | 26 / 37 |
 | 签名 | Android Debug（SHA-256 `79186029…d9c5`） |
 
@@ -73,7 +73,7 @@ python3 -m http.server 8899 --directory docs
 
 设计语言是**深色科技风**：网格底纹加青 / 紫双色光晕，圆角玻璃卡片，阶梯胶囊按钮与编号章节，数据行统一等宽字体；默认深色主题，可切换到冷白浅色（同一套圆角与光效语言）。主题偏好键为 `fe-cloud-theme-v2`。滚动时各段元素逐个淡入上移（IntersectionObserver，同组 50ms 步进、上限 8 项），首屏封面元素在加载后依次入场。
 
-页面为封面加九节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）→ 来源与致谢（解析器内核参考 LastStudio Fuck-ETS）。
+页面为封面加十节：封面（版本元信息表）→ 摘要（滚动计数）→ 变更台账（八条可展开）→ 删与留（左列进入视口划删除线）→ 模块树（点击节点联动说明区）→ 入场时间轨（六条轨道，可播放 / 暂停 / 1×2×4× / 拖动滑块）→ 构建与安装（三段命令可复制）→ 版本与清单（真实请求 `version.json`，同源 → ghproxy.net → gh-proxy.com → raw 回退，JSON 着色 + versionCode 比对）→ 问答（五条折叠）→ 来源与致谢（解析器内核参考 LastStudio Fuck-ETS）→ 免责声明（责任边界与第三方关系）。
 
 左侧常驻目录随滚动高亮，底部显示阅读百分比；窄屏（≤860px）收起侧栏，改为吸顶栏 + 主题切换。文件：`index.html`、`assets/style.css`、`assets/main.js`、`404.html`、`manifest.webmanifest`、`version.json` 与 192/512 图标。
 
@@ -81,10 +81,21 @@ python3 -m http.server 8899 --directory docs
 
 根目录 `version.json` 供 App 与站点共同消费；`docs/version.json` 是站点侧同源副本，两者需保持一致（`apkUrl` 在发布 Release 后填入）。
 
+## 免责声明
+
+本仓库及其构建产物为第三方个人改版，与 ETS100（e听说）及其运营方、学校、畅言、LastStudio 及任何第三方平台均无隶属、代理、授权或背书关系。
+
+- 按现状提供，不保证可用性、准确性、完整性与持续可用
+- 因下载、安装、登录或使用产生的一切后果与责任（账号受限或封禁、数据丢失、成绩与学术处分、考试违规、法律纠纷、设备或网络损失）由使用者自行承担
+- 本仓库作者、贡献者及上述第三方不承担任何责任
+- 仅限个人学习与技术交流；遵守学校、平台规则与当地法律，严禁考试作弊、代答或传播答案
+
+应用内展示位置：引导页同意文案、登录页提示卡、关于页、用户协议页；站点见第 10 节「免责声明」。
+
 ## 来源
 
 云端解析链路的内核实现参考了 **LastStudio 的 Fuck-ETS**：native 层的 `libresolver.so` / `libcloud.so`、试卷模板合并与答案解析的调用约定均源自该项目，本次改动只做模块删减与动画重写。账号与云端接口走 ETS100 官方 API，本仓库不托管任何服务端。
 
-## 许可与来源
+## 许可
 
 本项目为他人项目的本地改造版本，原始项目声明源码闭源并禁止重新打包分发。**请勿将此仓库源码或构建产物公开分发**，仅作个人学习与备份使用；如需二次分发，需自行取得原始作者授权。

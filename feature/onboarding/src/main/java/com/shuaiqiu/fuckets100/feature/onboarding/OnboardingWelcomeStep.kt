@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.shuaiqiu.fuckets100.feature.shared.AppDisclaimer
 import com.shuaiqiu.fuckets100.core.designsystem.RighteousFont
 import kotlinx.coroutines.launch
 
@@ -175,7 +176,7 @@ internal fun WelcomeStep(onNext: () -> Unit) {
 
         Spacer(Modifier.height(14.dp))
         Text(
-            text = "继续即表示你已阅读并同意随应用内置的使用说明：仅限个人学习交流使用，请勿传播。",
+            text = AppDisclaimer.SHORT + " 仅限个人学习与技术交流，请勿传播；继续即表示你已阅读并同意。",
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

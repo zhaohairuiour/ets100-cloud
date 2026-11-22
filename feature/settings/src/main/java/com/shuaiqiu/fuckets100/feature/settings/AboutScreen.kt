@@ -54,6 +54,7 @@ import com.shuaiqiu.fuckets100.feature.settings.R
 import com.shuaiqiu.fuckets100.core.common.AppBuildInfo
 import com.shuaiqiu.fuckets100.core.designsystem.TopBarBackButton
 import com.shuaiqiu.fuckets100.core.designsystem.expressiveTopAppBarColors
+import com.shuaiqiu.fuckets100.feature.shared.AppDisclaimerCard
 
 private const val WEBSITE_URL = "https://lastudio.cc"
 private const val CLOUD_DRIVE_URL = "https://oplist.lastudio.cc/Fe_android"
@@ -147,6 +148,8 @@ fun AboutScreen(
                     onClick = onDonate,
                 )
             }
+
+            AppDisclaimerCard()
 
             AboutSection(title = "法律与条款") {
                 AboutLinkRow(

@@ -36,6 +36,7 @@ import com.shuaiqiu.fuckets100.core.designsystem.ExpressiveScaffold
 import com.shuaiqiu.fuckets100.core.designsystem.TonalCard
 import com.shuaiqiu.fuckets100.core.designsystem.TopBarBackButton
 import com.shuaiqiu.fuckets100.core.designsystem.expressiveTopAppBarColors
+import com.shuaiqiu.fuckets100.feature.shared.AppDisclaimerCard
 
 private data class PendingDeviceBinding(
     val phone: String,
@@ -385,6 +386,8 @@ fun CloudActivationScreen(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            AppDisclaimerCard(compact = true)
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

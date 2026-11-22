@@ -192,5 +192,7 @@ private fun LegalSectionCard(section: LegalAgreementSection) {
                 }
             }
         }
+
+        AppDisclaimerCard()
     }
 }
