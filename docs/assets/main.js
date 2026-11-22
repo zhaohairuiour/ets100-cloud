@@ -77,6 +77,11 @@
         if (!s.el) return;
         if (s.el.getBoundingClientRect().top <= 140) current = s;
       });
+
+      // 滚到底部时，末节可能永远到不了阈值线，直接取最后一节
+      if (y + window.innerHeight >= document.documentElement.scrollHeight - 4) {
+        current = sections[sections.length - 1];
+      }
       items.forEach((a) => a.classList.remove("is-current"));
       current?.a.classList.add("is-current");
     };
